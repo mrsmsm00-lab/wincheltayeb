@@ -72,3 +72,75 @@
     }));
   }
 })();
+
+// مساعد الكتابة بالذكاء الاصطناعي
+(() => {
+  const box = document.getElementById("ai-box");
+  const form = document.getElementById("editor");
+  if (!box || !form) return;
+  const buttons = box.querySelectorAll("[data-ai]");
+  if (!buttons.length) return;
+  const status = document.getElementById("ai-status");
+  const undoBtn = document.getElementById("ai-undo");
+  const usage = document.getElementById("ai-usage");
+  const csrf = form.querySelector('input[name="csrf"]').value;
+  const ids = ["title", "excerpt", "body", "meta_title", "meta_description", "faqs"];
+  const el = (id) => document.getElementById(id);
+  let snapshot = null;
+
+  const setStatus = (text, kind) => { status.textContent = text; status.className = "ai-status " + (kind || ""); };
+  const fill = (id, value) => {
+    const f = el(id);
+    if (!f || typeof value !== "string" || value === "") return;
+    f.value = value;
+    f.dispatchEvent(new Event("input", { bubbles: true }));
+    f.classList.remove("ai-filled"); void f.offsetWidth; f.classList.add("ai-filled");
+  };
+  const labels = { write: "بيكتب المقال… ممكن ياخد دقيقة أو اتنين", improve: "بيحسّن المحتوى… ممكن ياخد دقيقة", seo: "بيكتب عنوان ووصف جوجل…", faqs: "بيكتب الأسئلة…" };
+  const done = { write: "المقال اتكتب. راجعه وبعدين دوس احفظ.", improve: "المحتوى اتحسّن. راجعه وبعدين دوس احفظ.", seo: "عنوان ووصف جوجل جاهزين.", faqs: "الأسئلة جاهزة." };
+
+  buttons.forEach((btn) => btn.addEventListener("click", async () => {
+    const action = btn.dataset.ai;
+    const body = el("body").value.trim();
+    if (action === "write" && body.length > 200 && !confirm("المحتوى الحالي هيتستبدل بمقال جديد. تقدر ترجعه بزرار التراجع. تكمّل؟")) return;
+
+    const fd = new FormData();
+    fd.append("csrf", csrf);
+    fd.append("action", action);
+    fd.append("type", form.dataset.type || "blog");
+    fd.append("title", el("title").value);
+    fd.append("body", el("body").value);
+    fd.append("idea", (el("ai-idea") || {}).value || "");
+    fd.append("place_name", (el("place_name") || {}).value || "");
+
+    buttons.forEach((b) => (b.disabled = true));
+    setStatus(labels[action], "busy");
+    try {
+      const res = await fetch("ai.php", { method: "POST", body: fd, credentials: "same-origin" });
+      let data;
+      try { data = await res.json(); } catch { throw new Error("السيرفر رجّع رد مش مفهوم (" + res.status + "). ممكن الطلب أخد وقت أطول من المسموح في الاستضافة."); }
+      if (!data.ok) throw new Error(data.error || "حصل خطأ.");
+      snapshot = Object.fromEntries(ids.map((id) => [id, el(id) ? el(id).value : ""]));
+      const f = data.fields || {};
+      if (action === "faqs" && el("faqs").value.trim()) {
+        if (confirm("فيه أسئلة موجودة. دوس OK عشان تضيف الجديدة تحتها، أو Cancel عشان تستبدلها.")) f.faqs = el("faqs").value.trim() + "\n\n" + f.faqs;
+      }
+      if (action === "write" && el("title").value.trim()) delete f.title; // العنوان اللي كتبته بيفضل زي ما هو
+      Object.entries(f).forEach(([k, v]) => fill(k, v));
+      if (usage && data.usage != null) usage.textContent = data.usage;
+      undoBtn.hidden = false;
+      setStatus(done[action], "ok");
+    } catch (e) {
+      setStatus(e.message, "err");
+    } finally {
+      buttons.forEach((b) => (b.disabled = false));
+    }
+  }));
+
+  undoBtn.addEventListener("click", () => {
+    if (!snapshot) return;
+    Object.entries(snapshot).forEach(([k, v]) => { const f = el(k); if (f) { f.value = v; f.dispatchEvent(new Event("input", { bubbles: true })); } });
+    snapshot = null; undoBtn.hidden = true;
+    setStatus("رجعنا للنسخة اللي قبل الـ AI.", "");
+  });
+})();

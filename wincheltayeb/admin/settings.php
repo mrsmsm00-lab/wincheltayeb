@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/layout.php';
+require __DIR__ . '/includes/ai.php';
 $user = require_login();
 
 $fields = [
@@ -22,6 +23,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $r = revalidate_site();
         flash('اتحفظت الإعدادات.' . ($r['ok'] ? '' : ' ' . $r['msg']), $r['ok'] ? 'ok' : 'warn');
         redirect('settings.php');
+    }
+    if ($action === 'ai') {
+        $key = trim((string) ($_POST['openai_api_key'] ?? ''));
+        if (isset($_POST['remove_key'])) set_setting('openai_api_key', '');
+        elseif ($key !== '') {
+            if (!preg_match('/^sk-[A-Za-z0-9_\-]{20,}$/', $key)) { $errors[] = 'شكل المفتاح مش صحيح. لازم يبدأ بـ sk-'; }
+            else set_setting('openai_api_key', $key);
+        }
+        $model = post_str('openai_model', 80);
+        if ($model !== '' && !preg_match('/^[A-Za-z0-9._:\-]+$/', $model)) $errors[] = 'اسم الموديل فيه حروف مش مسموحة.';
+        else set_setting('openai_model', $model);
+        set_setting('ai_daily_limit', (string) max(1, min(500, (int) ($_POST['ai_daily_limit'] ?? 40))));
+        if (!$errors) { flash('اتحفظت إعدادات الذكاء الاصطناعي.'); redirect('settings.php#ai'); }
     }
     if ($action === 'password') {
         $s = db()->prepare('SELECT password_hash FROM users WHERE id = ?'); $s->execute([$user['id']]);
@@ -52,6 +66,23 @@ layout_start('الإعدادات', 'settings');
   <h2>أسئلة الصفحة الرئيسية</h2>
   <label><span class="hint">س: للسؤال وج: للإجابة</span><textarea name="general_faqs" rows="14"><?= h(faqs_to_text(setting('general_faqs', '[]'))) ?></textarea></label>
   <button class="btn">احفظ الإعدادات</button>
+</form>
+
+<form method="post" class="box form-grid narrow-form" id="ai">
+  <?= csrf_field() ?><input type="hidden" name="action" value="ai">
+  <h2>مساعد الكتابة بالذكاء الاصطناعي (OpenAI)</h2>
+  <?php $src = ai_key_source(); ?>
+  <p class="muted">الحالة: <?= $src === '' ? '<strong class="warn-text">مش متظبط</strong>' : '<strong style="color:var(--green)">شغال</strong> (المفتاح ' . h(ai_mask(ai_key())) . ($src === 'config' ? '، من ملف config.local.php' : '') . ')' ?>.
+    الاستخدام النهارده: <?= ai_usage_today() ?> من <?= ai_daily_limit() ?>.</p>
+  <?php if ($src !== 'config'): ?>
+  <label>مفتاح OpenAI API <span class="hint">من platform.openai.com > API keys. سيبه فاضي لو مش عايز تغيّر المفتاح المحفوظ. المفتاح بيتحفظ على السيرفر بس.</span>
+    <input type="password" name="openai_api_key" dir="ltr" autocomplete="off" placeholder="<?= $src ? h(ai_mask(ai_key())) : 'sk-...' ?>"></label>
+  <?php if ($src === 'settings'): ?><label class="check"><input type="checkbox" name="remove_key"> امسح المفتاح المحفوظ</label><?php endif; ?>
+  <?php endif; ?>
+  <label>الموديل <span class="hint">سيبه فاضي عشان يستخدم <?= h(AI_DEFAULT_MODEL) ?>. لو OpenAI رفض الموديل، اكتب اسم موديل متاح لحسابك من صفحة Models في OpenAI.</span>
+    <input name="openai_model" dir="ltr" value="<?= h(setting('openai_model')) ?>" placeholder="<?= h(AI_DEFAULT_MODEL) ?>"></label>
+  <label>الحد الأقصى للطلبات في اليوم <input type="number" name="ai_daily_limit" min="1" max="500" value="<?= ai_daily_limit() ?>"></label>
+  <button class="btn">احفظ إعدادات الـ AI</button>
 </form>
 
 <form method="post" class="box form-grid narrow-form">

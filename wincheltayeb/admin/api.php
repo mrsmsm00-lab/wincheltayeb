@@ -14,7 +14,10 @@ $resource = $_GET['resource'] ?? 'all';
 $out = [];
 if (in_array($resource, ['all', 'settings'], true)) {
     $settings = [];
-    foreach (db()->query("SELECT key, value FROM settings WHERE key NOT LIKE '\\_%' ESCAPE '\\'") as $r) $settings[$r['key']] = $r['value'];
+    $private = ['openai_api_key', 'openai_model', 'ai_daily_limit'];
+    foreach (db()->query("SELECT key, value FROM settings WHERE key NOT LIKE '\\_%' ESCAPE '\\'") as $r) {
+        if (!in_array($r['key'], $private, true)) $settings[$r['key']] = $r['value'];
+    }
     $out['settings'] = $settings;
     $out['districts'] = districts();
 }

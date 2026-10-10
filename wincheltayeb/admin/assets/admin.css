@@ -74,3 +74,13 @@ fieldset.box legend { font-weight: 700; padding: 0 6px; }
 .admin-gallery p { margin: 6px 0; font-size: .9rem; }
 @media (max-width: 900px) { .editor, .cols { grid-template-columns: 1fr; } .editor-side { position: static; } .grid2 { grid-template-columns: 1fr; } }
 input, select, textarea { font-weight: 400; }
+.ai-box { border: 2px solid var(--blue); }
+.ai-actions { display: grid; gap: 8px; margin-bottom: 10px; }
+.ai-actions .btn { width: 100%; }
+.ai-actions .btn[disabled] { opacity: .55; cursor: wait; }
+.ai-status { min-height: 1.5em; margin: 6px 0; font-weight: 600; }
+.ai-status.ok { color: var(--green); } .ai-status.err { color: var(--red); } .ai-status.busy { color: var(--blue); }
+.link-btn { background: none; border: 0; color: var(--blue); text-decoration: underline; font: inherit; cursor: pointer; padding: 0; margin-bottom: 8px; }
+.ai-filled { animation: ai-flash 1.6s ease-out; }
+@keyframes ai-flash { from { background: #e3eefc; } to { background: #fff; } }
+@media (prefers-reduced-motion: reduce) { .ai-filled { animation: none; } }

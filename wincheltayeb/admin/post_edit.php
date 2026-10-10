@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/layout.php';
+require __DIR__ . '/includes/ai.php';
 require_login();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -80,13 +81,13 @@ layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
 </div>
 <?php foreach ($errors as $e): ?><div class="flash flash-err"><?= h($e) ?></div><?php endforeach; ?>
 
-<form method="post" enctype="multipart/form-data" class="editor">
+<form method="post" enctype="multipart/form-data" class="editor" id="editor" data-type="<?= h($type) ?>">
   <?= csrf_field() ?>
   <div class="editor-main">
     <label>العنوان (H1) <input name="title" id="title" required value="<?= h($post['title']) ?>"></label>
     <label>الرابط (slug) <span class="hint">حروف إنجليزي صغيرة وشرطة، مثلاً: ain-sokhna</span>
       <div class="slug-row"><span dir="ltr" class="muted"><?= h(rtrim(cfg('site_url'), '/') . '/' . ($t['path'] ? $t['path'] . '/' : '')) ?></span><input name="slug" id="slug" dir="ltr" value="<?= h($post['slug']) ?>"></div></label>
-    <label>المقدمة (بتظهر تحت العنوان وفي القوايم) <textarea name="excerpt" rows="2"><?= h($post['excerpt']) ?></textarea></label>
+    <label>المقدمة (بتظهر تحت العنوان وفي القوايم) <textarea name="excerpt" id="excerpt" rows="2"><?= h($post['excerpt']) ?></textarea></label>
 
     <div class="md">
       <div class="md-head"><span>المحتوى (Markdown)</span>
@@ -103,13 +104,13 @@ layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
     </div>
 
     <label>الأسئلة الشائعة <span class="hint">كل سؤال في سطر يبدأ بـ «س:» وإجابته في السطر اللي بعده بـ «ج:»</span>
-      <textarea name="faqs" rows="8"><?= h(faqs_to_text($post['faqs'])) ?></textarea></label>
+      <textarea name="faqs" id="faqs" rows="8"><?= h(faqs_to_text($post['faqs'])) ?></textarea></label>
 
     <?php if ($type === 'area'): ?>
     <fieldset class="box">
       <legend>بيانات المنطقة والخريطة</legend>
       <div class="grid2">
-        <label>اسم المكان (بيظهر على الخريطة) <input name="place_name" value="<?= h($post['place_name']) ?>"></label>
+        <label>اسم المكان (بيظهر على الخريطة) <input name="place_name" id="place_name" value="<?= h($post['place_name']) ?>"></label>
         <label>الحي <select name="district"><?php foreach ($districts as $k => $d): ?><option value="<?= h($k) ?>"<?= $post['district'] === $k ? ' selected' : '' ?>><?= h($d['name']) ?></option><?php endforeach; ?></select></label>
         <label>وقت الوصول المتوقع <input name="eta" value="<?= h($post['eta']) ?>" placeholder="20 لـ 30 دقيقة"></label>
         <div class="grid2">
@@ -129,6 +130,25 @@ layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
       <label>تاريخ النشر <input type="date" name="published_at" value="<?= h($post['published_at']) ?>"></label>
       <label>الترتيب <input type="number" name="sort" value="<?= (int) $post['sort'] ?>"></label>
       <button class="btn btn-block">احفظ</button>
+    </div>
+    <div class="box ai-box" id="ai-box">
+      <h2>مساعد الكتابة (AI)</h2>
+      <?php if (ai_key() === ''): ?>
+        <p class="muted">علشان تشغّله، حط مفتاح OpenAI من <a href="settings.php#ai">الإعدادات</a>.</p>
+      <?php else: ?>
+        <label>الفكرة أو ملاحظاتك <span class="hint">مثلاً: «ونش لعربية أوتوماتيك عطلت عند ميناء الأدبية بالليل». اذكر أي أماكن حقيقية تحب تتكتب.</span>
+          <textarea id="ai-idea" rows="3"></textarea></label>
+        <div class="ai-actions">
+          <button type="button" class="btn" data-ai="write">اكتب المقال كامل</button>
+          <button type="button" class="btn btn-ghost" data-ai="improve">حسّن وطوّل المحتوى</button>
+          <button type="button" class="btn btn-ghost" data-ai="seo">اعمل عنوان ووصف جوجل</button>
+          <button type="button" class="btn btn-ghost" data-ai="faqs">اعمل أسئلة شائعة</button>
+        </div>
+        <p class="ai-status" id="ai-status" role="status" aria-live="polite"></p>
+        <button type="button" class="link-btn" id="ai-undo" hidden>تراجع عن آخر تعديل من الـ AI</button>
+        <p class="hint">النتيجة بتتحط في الخانات بس، ومش بتتحفظ غير لما تدوس «احفظ». راجع أي اسم مكان قبل النشر.
+          الاستخدام النهارده: <span id="ai-usage"><?= ai_usage_today() ?></span> من <?= ai_daily_limit() ?>.</p>
+      <?php endif; ?>
     </div>
     <div class="box">
       <h2>السيو</h2>
