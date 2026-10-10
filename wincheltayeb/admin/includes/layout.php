@@ -7,7 +7,7 @@ function asset_v(string $file): string {
 function layout_start(string $title, string $active = ''): void {
     $u = current_user();
     $f = flash();
-    $nav = ['index' => ['index.php', 'الرئيسية']];
+    $nav = ['index' => ['index.php', 'لوحة التحكم'], 'home' => ['home.php', 'الصفحة الرئيسية'], 'menu' => ['menu.php', 'القايمة']];
     foreach (POST_TYPES as $k => $t) $nav[$k] = ["posts.php?type=$k", $t['label']];
     $nav['gallery'] = ['gallery.php', 'صور وفيديوهات'];
     $nav['import'] = ['import.php', 'استيراد'];

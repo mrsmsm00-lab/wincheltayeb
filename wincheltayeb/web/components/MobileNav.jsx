@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "./Icon";
 
+const isExternal = (href) => /^(https?:|tel:|mailto:|#)/i.test(href);
+
 export default function MobileNav({ items }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
@@ -22,9 +24,16 @@ export default function MobileNav({ items }) {
       </button>
       <div id="mobile-menu" className={`mobile-menu${open ? " is-open" : ""}`} hidden={!open}>
         <ul>
-          {items.map((n) => (
-            <li key={n.href}><Link href={n.href} aria-current={path === n.href ? "page" : undefined}>{n.label}</Link></li>
-          ))}
+          {items.map((n, i) => {
+            const props = { className: n.style === "button" ? "nav-cta" : undefined, ...(n.new_tab ? { target: "_blank", rel: "noopener" } : {}) };
+            return (
+              <li key={i}>
+                {isExternal(n.href)
+                  ? <a href={n.href} {...props} onClick={() => setOpen(false)}>{n.label}</a>
+                  : <Link href={n.href} {...props} aria-current={path === n.href ? "page" : undefined}>{n.label}</Link>}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </>

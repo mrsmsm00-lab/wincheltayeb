@@ -22,7 +22,7 @@ if (in_array($resource, ['all', 'settings'], true)) {
     $out['districts'] = districts();
 }
 if (in_array($resource, ['all', 'posts'], true)) {
-    $posts = db()->query('SELECT type, slug, title, excerpt, body, meta_title, meta_description, image, icon, district, place_name, lat, lng, eta, faqs, published, sort, published_at, updated_at FROM posts WHERE published = 1 ORDER BY sort, id')->fetchAll();
+    $posts = db()->query('SELECT type, slug, title, excerpt, body, format, meta_title, meta_description, image, icon, district, place_name, lat, lng, eta, faqs, published, sort, published_at, updated_at FROM posts WHERE published = 1 ORDER BY sort, id')->fetchAll();
     foreach ($posts as &$p) { $p['faqs'] = json_decode($p['faqs'], true) ?: []; $p['lat'] = $p['lat'] === null ? null : (float) $p['lat']; $p['lng'] = $p['lng'] === null ? null : (float) $p['lng']; }
     $out['posts'] = $posts;
 }

@@ -35,6 +35,7 @@ try {
         'idea' => (string) ($_POST['idea'] ?? ''),
         'body' => (string) ($_POST['body'] ?? ''),
         'place_name' => (string) ($_POST['place_name'] ?? ''),
+        'format' => clean_format($_POST['format'] ?? 'markdown'),
     ]);
     ai_bump_usage();
     ai_out(['ok' => true, 'fields' => $fields, 'usage' => ai_usage_today(), 'limit' => $limit]);

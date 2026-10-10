@@ -332,3 +332,41 @@ bdi { unicode-bidi: isolate; }
   .sign-rows li::after { display: none; }
   .sign-rows span { margin-inline-start: auto; }
 }
+
+/* ===== أقسام الصفحة الرئيسية القابلة للتحكم ===== */
+.section-blue { background: var(--blue); color: #fff; }
+.section-blue .section-lead, .section-ink .section-lead { color: #dfe6ef; }
+.section-blue a, .section-ink a { color: #fff; }
+.section-blue .faq summary::after, .section-ink .faq summary::after { color: #fff; }
+.section-blue .faq details p, .section-ink .faq details p, .section-blue .service-rows p, .section-ink .service-rows p, .section-blue .article-list p, .section-ink .article-list p, .section-blue .article-list time, .section-ink .article-list time { color: #dfe6ef; }
+.section-blue .service-rows h3 a, .section-ink .service-rows h3 a, .section-blue .article-list h3 a, .section-ink .article-list h3 a { color: #fff; }
+.section-blue .article-list li, .section-ink .article-list li { border-top-color: #fff; }
+.cta-band.cta-white { background: #fff; color: var(--ink); border-block: 1px solid var(--line); }
+.cta-band.cta-mist { background: var(--mist); color: var(--ink); }
+.cta-band.cta-ink { background: var(--ink); }
+.cta-band.cta-white .btn-call, .cta-band.cta-mist .btn-call { background: var(--blue); color: #fff; }
+.wrap-full { width: 100%; }
+.prose.prose-wide { max-width: none; }
+.custom-section .prose > :first-child { margin-top: 0; }
+.section-blue .prose a, .section-ink .prose a { color: #fff; text-decoration: underline; }
+.section-blue .prose blockquote, .section-ink .prose blockquote, .section-blue .prose .callout, .section-ink .prose .callout { background: rgba(255,255,255,.08); border-color: #fff; }
+
+/* محتوى غني داخل المقالات والأقسام */
+.prose img { border-radius: 10px; height: auto; margin: 1.2em 0; }
+.prose table { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: .97rem; display: block; overflow-x: auto; }
+.prose th, .prose td { border: 1px solid var(--line); padding: 8px 12px; text-align: start; }
+.prose th { background: var(--mist); font-family: var(--f-d); font-weight: 600; }
+.prose .callout { margin: 1.4em 0; padding: 14px 18px; border-inline-start: 4px solid var(--blue); background: var(--mist); border-radius: 0 8px 8px 0; }
+.prose .video-embed { position: relative; aspect-ratio: 16 / 9; margin: 1.4em 0; border-radius: 10px; overflow: hidden; background: #000; }
+.prose .video-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.prose iframe { max-width: 100%; border: 0; }
+.prose hr { border: 0; border-top: 2px solid var(--line); margin: 2em 0; }
+.prose details { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin: 1em 0; }
+.prose summary { cursor: pointer; font-weight: 700; }
+.gallery-link { display: block; aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--mist); }
+.gallery-link img { width: 100%; height: 100%; object-fit: cover; }
+
+/* زرار مميز في القايمة */
+.main-nav a.nav-cta { background: var(--blue); color: #fff; }
+.main-nav a.nav-cta:hover { background: var(--blue-deep); color: #fff; }
+.mobile-menu a.nav-cta { color: var(--blue); font-weight: 800; }

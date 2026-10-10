@@ -2,6 +2,7 @@
 require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/layout.php';
 require __DIR__ . '/includes/ai.php';
+require __DIR__ . '/includes/editor.php';
 require_login();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -14,7 +15,7 @@ if ($id) {
     $type = $_GET['type'] ?? 'blog';
     if (!isset(POST_TYPES[$type])) $type = 'blog';
     $post = ['type' => $type, 'slug' => '', 'title' => '', 'excerpt' => '', 'body' => '', 'meta_title' => '', 'meta_description' => '',
-        'image' => '', 'icon' => 'car', 'district' => '', 'place_name' => '', 'lat' => null, 'lng' => null, 'eta' => '', 'faqs' => '[]',
+        'image' => '', 'format' => 'markdown', 'icon' => 'car', 'district' => '', 'place_name' => '', 'lat' => null, 'lng' => null, 'eta' => '', 'faqs' => '[]',
         'published' => 1, 'sort' => 100, 'published_at' => date('Y-m-d')];
 }
 $errors = [];
@@ -25,7 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'title' => post_str('title', 200),
         'slug' => slugify(post_str('slug', 120) ?: post_str('title', 120)),
         'excerpt' => post_str('excerpt', 500),
-        'body' => str_replace("\r\n", "\n", post_str('body', 200000)),
+        'body' => str_replace("\r\n", "\n", post_str('body', 400000)),
+        'format' => clean_format($_POST['format'] ?? 'markdown'),
         'meta_title' => post_str('meta_title', 120),
         'meta_description' => post_str('meta_description', 320),
         'image' => post_str('image', 500),
@@ -89,19 +91,7 @@ layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
       <div class="slug-row"><span dir="ltr" class="muted"><?= h(rtrim(cfg('site_url'), '/') . '/' . ($t['path'] ? $t['path'] . '/' : '')) ?></span><input name="slug" id="slug" dir="ltr" value="<?= h($post['slug']) ?>"></div></label>
     <label>المقدمة (بتظهر تحت العنوان وفي القوايم) <textarea name="excerpt" id="excerpt" rows="2"><?= h($post['excerpt']) ?></textarea></label>
 
-    <div class="md">
-      <div class="md-head"><span>المحتوى (Markdown)</span>
-        <div class="md-tools" role="toolbar" aria-label="أدوات التنسيق">
-          <button type="button" data-md="## ">عنوان</button><button type="button" data-md="### ">عنوان فرعي</button>
-          <button type="button" data-wrap="**">عريض</button><button type="button" data-md="- ">قايمة</button>
-          <button type="button" data-md="1. ">خطوات</button><button type="button" data-link>رابط</button>
-          <button type="button" id="toggle-preview">معاينة</button>
-        </div>
-      </div>
-      <textarea name="body" id="body" rows="24" dir="rtl"><?= h($post['body']) ?></textarea>
-      <div id="preview" class="preview" hidden></div>
-      <p class="hint"><span id="body-count">0</span> حرف. ## للعنوان، **كلام** للعريض، - للقايمة، و[نص](/areas/arbaeen) للرابط الداخلي.</p>
-    </div>
+    <?php editor_field('body', (string) $post['body'], (string) ($post['format'] ?? 'markdown'), 'format', 'body', $id ? "post-$id" : "new-$type"); ?>
 
     <label>الأسئلة الشائعة <span class="hint">كل سؤال في سطر يبدأ بـ «س:» وإجابته في السطر اللي بعده بـ «ج:»</span>
       <textarea name="faqs" id="faqs" rows="8"><?= h(faqs_to_text($post['faqs'])) ?></textarea></label>
@@ -172,6 +162,6 @@ layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
   </aside>
 </form>
 <?php
-$scripts = ['https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.7/marked.min.js'];
-if ($type === 'area') { echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">'; $scripts[] = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; }
+$scripts = editor_scripts();
+if ($type === 'area') { echo '<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">'; $scripts[] = 'assets/vendor/leaflet/leaflet.js'; }
 layout_end($scripts);

@@ -52,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $row = [
                 'title' => mb_substr($title, 0, 200), 'excerpt' => mb_substr(trim((string) ($p['excerpt'] ?? '')), 0, 500),
                 'body' => str_replace("\r\n", "\n", (string) $p['body']),
+                'format' => clean_format($p['format'] ?? 'markdown'),
                 'meta_title' => mb_substr(trim((string) ($p['meta_title'] ?? '')), 0, 120),
                 'meta_description' => mb_substr(trim((string) ($p['meta_description'] ?? '')), 0, 320),
                 'image' => (string) ($p['image'] ?? ''), 'icon' => (string) ($p['icon'] ?? ''),

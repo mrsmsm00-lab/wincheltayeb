@@ -1,0 +1,136 @@
+{
+  "home_sections": [
+    {
+      "id": "hero",
+      "type": "hero",
+      "enabled": true,
+      "kicker": "ونش إنقاذ الطيب",
+      "title": "ونش إنقاذ السويس شغال 24 ساعة",
+      "lead": "عربيتك عطلت أو عملت حادثة في أي حتة في محافظة السويس؟ ابعتلنا لوكيشن، هنقولك السعر النهائي ووقت الوصول، والسطحة تتحرك لك على طول.",
+      "facts": "سعر نهائي في التليفون قبل ما الونش يتحرك\nسطحات هيدروليك للملاكي والأوتوماتيك\nمن جنيفة في الشمال للجلالة والزعفرانة في الجنوب",
+      "sign_rows": "suez-downtown, arbaeen, ain-sokhna, suez-cairo-desert-road",
+      "show_buttons": true
+    },
+    {
+      "id": "services",
+      "type": "services",
+      "enabled": true,
+      "title": "خدمات ونش الطيب في السويس",
+      "more_label": "كل الخدمات",
+      "more_href": "/services",
+      "bg": "white"
+    },
+    {
+      "id": "map",
+      "type": "map",
+      "enabled": true,
+      "title": "خريطة التغطية في محافظة السويس",
+      "lead": "دوس على أي نقطة تعرف وقت الوصول وتقرا عن خدمة الونش في المنطقة دي.",
+      "height": 480,
+      "more_label": "افتح الخريطة كاملة",
+      "more_href": "/suez-map",
+      "bg": "mist"
+    },
+    {
+      "id": "areas",
+      "type": "areas",
+      "enabled": true,
+      "title": "بنوصل فين في السويس؟",
+      "limit": 0,
+      "bg": "white"
+    },
+    {
+      "id": "steps",
+      "type": "steps",
+      "enabled": true,
+      "title": "تطلب الونش إزاي",
+      "items": "اتصل أو ابعت واتساب | على {phone} في أي وقت.\nابعت اللوكيشن | من الموبايل، وقولنا رايح فين.\nخد السعر النهائي | ووقت الوصول قبل ما نتحرك.\nالونش يوصل | يصوّر العربية قدامك ويحمّلها على السطحة.",
+      "bg": "ink"
+    },
+    {
+      "id": "articles",
+      "type": "articles",
+      "enabled": true,
+      "title": "نصايح لأصحاب العربيات في السويس",
+      "count": 3,
+      "more_label": "كل المقالات",
+      "more_href": "/blog",
+      "bg": "white"
+    },
+    {
+      "id": "gallery",
+      "type": "gallery",
+      "enabled": false,
+      "title": "من شغلنا",
+      "count": 6,
+      "more_label": "كل الصور والفيديوهات",
+      "more_href": "/gallery",
+      "bg": "white"
+    },
+    {
+      "id": "faq",
+      "type": "faq",
+      "enabled": true,
+      "title": "أسئلة بتتسأل كتير",
+      "bg": "mist"
+    },
+    {
+      "id": "cta",
+      "type": "cta",
+      "enabled": true,
+      "text": "واقف دلوقتي؟ متستناش.",
+      "bg": "blue"
+    }
+  ],
+  "nav_menu": [
+    {
+      "label": "خدماتنا",
+      "href": "/services",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    },
+    {
+      "label": "مناطق السويس",
+      "href": "/areas",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    },
+    {
+      "label": "خريطة التغطية",
+      "href": "/suez-map",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    },
+    {
+      "label": "نصايح ومقالات",
+      "href": "/blog",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    },
+    {
+      "label": "صور وفيديوهات",
+      "href": "/gallery",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    },
+    {
+      "label": "مين إحنا",
+      "href": "/about",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    },
+    {
+      "label": "كلمنا",
+      "href": "/contact",
+      "enabled": true,
+      "new_tab": false,
+      "style": "normal"
+    }
+  ]
+}

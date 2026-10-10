@@ -39,7 +39,7 @@ export default async function BlogPost({ params }) {
       <div className="wrap with-aside">
         <article>
           {post.image && <img className="cover" src={post.image} alt={post.title} />}
-          <Markdown source={post.body} />
+          <Markdown source={post.body} format={post.format} />
           <Faq items={post.faqs} />
         </article>
         <Aside settings={settings} links={services} linksTitle="خدماتنا" />

@@ -30,32 +30,6 @@
     slug.addEventListener("input", () => (slug.dataset.touched = "1"));
   }
 
-  // محرر Markdown
-  const body = document.getElementById("body");
-  if (body) {
-    const count = document.getElementById("body-count");
-    const upd = () => (count.textContent = body.value.length.toLocaleString("ar-EG"));
-    body.addEventListener("input", upd); upd();
-    const insert = (before, after = "") => {
-      const s = body.selectionStart, e = body.selectionEnd, sel = body.value.slice(s, e);
-      body.setRangeText(before + sel + after, s, e, "end"); body.focus(); upd();
-    };
-    document.querySelectorAll("[data-md]").forEach((b) => b.addEventListener("click", () => {
-      const s = body.selectionStart; const lineStart = body.value.lastIndexOf("\n", s - 1) + 1;
-      body.setRangeText(b.dataset.md, lineStart, lineStart, "end"); body.focus();
-    }));
-    document.querySelectorAll("[data-wrap]").forEach((b) => b.addEventListener("click", () => insert(b.dataset.wrap, b.dataset.wrap)));
-    document.querySelectorAll("[data-link]").forEach((b) => b.addEventListener("click", () => {
-      const url = prompt("الرابط (داخلي زي /areas/arbaeen أو كامل):"); if (url) insert("[", `](${url})`);
-    }));
-    const prev = document.getElementById("preview"), tog = document.getElementById("toggle-preview");
-    tog.addEventListener("click", () => {
-      const show = prev.hidden;
-      if (show) prev.innerHTML = window.marked ? window.marked.parse(body.value) : "<p>المعاينة محتاجة إنترنت.</p>";
-      prev.hidden = !show; body.hidden = show; tog.textContent = show ? "رجوع للتعديل" : "معاينة";
-    });
-  }
-
   // اختيار مكان المنطقة على الخريطة
   const picker = document.getElementById("picker");
   if (picker && window.L) {
@@ -112,6 +86,8 @@
     fd.append("body", el("body").value);
     fd.append("idea", (el("ai-idea") || {}).value || "");
     fd.append("place_name", (el("place_name") || {}).value || "");
+    const fmtSel = form.querySelector('select[name="format"]');
+    fd.append("format", fmtSel ? fmtSel.value : "markdown");
 
     buttons.forEach((b) => (b.disabled = true));
     setStatus(labels[action], "busy");
@@ -126,6 +102,7 @@
         if (confirm("فيه أسئلة موجودة. دوس OK عشان تضيف الجديدة تحتها، أو Cancel عشان تستبدلها.")) f.faqs = el("faqs").value.trim() + "\n\n" + f.faqs;
       }
       if (action === "write" && el("title").value.trim()) delete f.title; // العنوان اللي كتبته بيفضل زي ما هو
+      if (action === "write" && fmtSel && fmtSel.value === "html") { fmtSel.value = "markdown"; fmtSel.dispatchEvent(new Event("change")); }
       Object.entries(f).forEach(([k, v]) => fill(k, v));
       if (usage && data.usage != null) usage.textContent = data.usage;
       undoBtn.hidden = false;
@@ -182,4 +159,77 @@
     });
     update();
   });
+})();
+
+// قوايم قابلة للترتيب (أقسام الرئيسية والقايمة): سحب، أسهم، إضافة، مسح، إظهار/إخفاء
+(() => {
+  const lists = document.querySelectorAll("[data-sortable]");
+  if (!lists.length) return;
+  let dirty = false;
+  const markDirty = () => { dirty = true; };
+  document.querySelectorAll("form[data-dirty-guard]").forEach((f) => {
+    f.addEventListener("input", markDirty);
+    f.addEventListener("change", markDirty);
+    f.addEventListener("submit", () => { dirty = false; });
+  });
+  window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+  const wire = (item) => {
+    const handle = item.querySelector(".drag");
+    if (handle) {
+      handle.addEventListener("mousedown", () => (item.draggable = true));
+      handle.addEventListener("touchstart", () => (item.draggable = true), { passive: true });
+    }
+    item.addEventListener("dragstart", (e) => { item.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ""); });
+    item.addEventListener("dragend", () => { item.classList.remove("dragging"); item.draggable = false; markDirty(); });
+    const en = item.querySelector("[data-enabled]");
+    if (en) en.addEventListener("change", () => item.classList.toggle("is-off", !en.checked));
+    const tg = item.querySelector(".sec-toggle");
+    const body = item.querySelector(".sec-body");
+    if (tg && body) tg.addEventListener("click", () => { body.hidden = !body.hidden; tg.setAttribute("aria-expanded", String(!body.hidden)); });
+    const ti = item.querySelector("[data-title-input]");
+    const tl = item.querySelector("[data-title-label]");
+    if (ti && tl) ti.addEventListener("input", () => { if (ti.value.trim()) tl.textContent = ti.value; });
+  };
+
+  lists.forEach((list) => {
+    list.querySelectorAll(":scope > [data-item]").forEach(wire);
+    list.addEventListener("dragover", (e) => {
+      const dragging = list.querySelector(".dragging");
+      if (!dragging) return;
+      e.preventDefault();
+      const after = [...list.querySelectorAll(":scope > [data-item]:not(.dragging)")].find((el) => {
+        const r = el.getBoundingClientRect();
+        return e.clientY < r.top + r.height / 2;
+      });
+      if (after) list.insertBefore(dragging, after); else list.appendChild(dragging);
+    });
+    list.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-move], [data-remove]");
+      if (!btn) return;
+      const item = btn.closest("[data-item]");
+      if (btn.dataset.move === "up" && item.previousElementSibling) item.parentNode.insertBefore(item, item.previousElementSibling);
+      else if (btn.dataset.move === "down" && item.nextElementSibling) item.parentNode.insertBefore(item.nextElementSibling, item);
+      else if (btn.hasAttribute("data-remove")) { if (!confirm("تمسح العنصر ده؟ (التغيير مش هيتحفظ غير لما تدوس احفظ)")) return; item.remove(); }
+      btn.focus();
+      markDirty();
+    });
+  });
+
+  document.querySelectorAll("[data-add]").forEach((btn) => btn.addEventListener("click", () => {
+    const tpl = document.getElementById(btn.dataset.add);
+    const list = document.getElementById(btn.dataset.addTo);
+    const id = "c_" + Math.random().toString(36).slice(2, 9);
+    const wrap = document.createElement("div");
+    wrap.innerHTML = tpl.innerHTML.replaceAll("__ID__", id);
+    const item = wrap.firstElementChild;
+    list.appendChild(item);
+    wire(item);
+    const body = item.querySelector(".sec-body");
+    if (body) { body.hidden = false; item.querySelector(".sec-toggle")?.setAttribute("aria-expanded", "true"); }
+    if (window.WTEditor) window.WTEditor.init(item);
+    item.scrollIntoView({ behavior: "smooth", block: "center" });
+    item.querySelector("input:not([type=hidden]), textarea")?.focus();
+    markDirty();
+  }));
 })();

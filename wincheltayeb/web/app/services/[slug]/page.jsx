@@ -34,7 +34,7 @@ export default async function ServicePage({ params }) {
       <PageHead crumbs={crumbs} title={post.title} lead={post.excerpt} />
       <div className="wrap with-aside">
         <article>
-          <Markdown source={post.body} />
+          <Markdown source={post.body} format={post.format} />
           <section className="inline-section">
             <h2>{post.title} في كل مناطق السويس</h2>
             <AreaPlates areas={areas} />

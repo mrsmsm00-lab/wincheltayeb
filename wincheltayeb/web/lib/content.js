@@ -1,5 +1,6 @@
 import { cache } from "react";
 import seed from "@/content/seed.json";
+import siteDefaults from "@/content/site-defaults.json";
 
 const API = process.env.CMS_API_URL;
 
@@ -11,11 +12,16 @@ function parseJson(v, fallback) {
 function normalize(data) {
   const settings = { ...seed.settings, ...(data.settings || {}) };
   settings.general_faqs = parseJson(settings.general_faqs, []);
+  const sections = parseJson(settings.home_sections, null);
+  settings.home_sections = Array.isArray(sections) && sections.length ? sections : siteDefaults.home_sections;
+  const menu = parseJson(settings.nav_menu, null);
+  settings.nav_menu = (Array.isArray(menu) && menu.length ? menu : siteDefaults.nav_menu).filter((m) => m && m.label && m.href);
   const posts = (data.posts || [])
     .filter((p) => Number(p.published) === 1)
     .map((p) => ({
       ...p,
       faqs: parseJson(p.faqs, []),
+      format: p.format === "html" ? "html" : "markdown",
       lat: p.lat === null || p.lat === "" ? null : Number(p.lat),
       lng: p.lng === null || p.lng === "" ? null : Number(p.lng),
       sort: Number(p.sort || 0),

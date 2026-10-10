@@ -40,7 +40,7 @@ export default async function AreaPage({ params }) {
       </PageHead>
       <div className="wrap with-aside">
         <article>
-          <Markdown source={post.body} />
+          <Markdown source={post.body} format={post.format} />
           {post.lat && (
             <section className="inline-section">
               <h2>{place} على خريطة السويس</h2>

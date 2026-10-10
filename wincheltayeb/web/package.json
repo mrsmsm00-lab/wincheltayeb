@@ -13,7 +13,10 @@
     "marked": "18.0.14",
     "next": "16.3.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "sanitize-html": "2.17.7"
   },
-  "engines": { "node": ">=20.9.0" }
+  "engines": {
+    "node": ">=20.9.0"
+  }
 }

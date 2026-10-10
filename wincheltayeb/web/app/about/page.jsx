@@ -19,7 +19,7 @@ export default async function About() {
     <>
       <PageHead crumbs={crumbs} title={post.title} lead={post.excerpt} />
       <div className="wrap with-aside">
-        <article><Markdown source={post.body} /></article>
+        <article><Markdown source={post.body} format={post.format} /></article>
         <Aside settings={settings} />
       </div>
       <JsonLd data={breadcrumbSchema(crumbs)} />

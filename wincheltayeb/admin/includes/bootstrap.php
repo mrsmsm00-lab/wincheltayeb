@@ -79,6 +79,22 @@ function migrate(PDO $pdo): void {
     CREATE TABLE IF NOT EXISTS districts (key TEXT PRIMARY KEY, name TEXT NOT NULL, color TEXT NOT NULL DEFAULT '#0B4EA2', sort INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS login_attempts (ip TEXT PRIMARY KEY, attempts INTEGER NOT NULL, last_at INTEGER NOT NULL);
     ");
+    // أعمدة اتضافت بعد الإصدار الأول
+    $cols = array_column($pdo->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
+    if (!in_array('format', $cols, true)) $pdo->exec("ALTER TABLE posts ADD COLUMN format TEXT NOT NULL DEFAULT 'markdown'");
+}
+
+function clean_format($f): string { return $f === 'html' ? 'html' : 'markdown'; }
+
+/** روابط الموقع (للمحرر والقايمة) */
+function site_links(): array {
+    $out = [['الرئيسية', '/'], ['خدماتنا', '/services'], ['مناطق السويس', '/areas'], ['خريطة التغطية', '/suez-map'],
+        ['نصايح ومقالات', '/blog'], ['صور وفيديوهات', '/gallery'], ['كلمنا', '/contact']];
+    foreach (db()->query("SELECT type, slug, title FROM posts WHERE published = 1 ORDER BY type, sort, id") as $p) {
+        $path = POST_TYPES[$p['type']]['path'];
+        $out[] = [$p['title'], ($path ? "/$path/" : '/') . $p['slug']];
+    }
+    return $out;
 }
 
 function is_installed(): bool {

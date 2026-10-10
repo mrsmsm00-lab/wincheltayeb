@@ -1,10 +1,20 @@
 import Link from "next/link";
 import Icon from "./Icon";
 import MobileNav from "./MobileNav";
-import { NAV } from "./nav";
 import { telHref } from "@/lib/site";
 
+const isExternal = (href) => /^(https?:|tel:|mailto:)/i.test(href);
+
+export function NavLink({ item, className }) {
+  const cls = [className, item.style === "button" ? "nav-cta" : ""].filter(Boolean).join(" ") || undefined;
+  const extra = item.new_tab ? { target: "_blank", rel: "noopener" } : {};
+  if (isExternal(item.href) || item.href.startsWith("#")) return <a href={item.href} className={cls} {...extra}>{item.label}</a>;
+  return <Link href={item.href} className={cls} {...extra}>{item.label}</Link>;
+}
+
 export default function Header({ settings }) {
+  const menu = (settings.nav_menu || []).filter((m) => m.enabled !== false);
+  const mobile = menu.some((m) => m.href === "/") ? menu : [{ label: "الرئيسية", href: "/" }, ...menu];
   return (
     <header className="site-header">
       <div className="topline">
@@ -17,18 +27,16 @@ export default function Header({ settings }) {
         <Link href="/" className="brand" aria-label="ونش إنقاذ الطيب، الصفحة الرئيسية">
           <img src="/logo.svg" alt="" width="44" height="44" />
           <span className="brand-text">
-            <strong>ونش إنقاذ الطيب</strong>
-            <small>ونش إنقاذ السويس</small>
+            <strong>{settings.site_name || "ونش إنقاذ الطيب"}</strong>
+            <small>{settings.tagline || "ونش إنقاذ السويس"}</small>
           </span>
         </Link>
         <nav className="main-nav" aria-label="القائمة الرئيسية">
           <ul>
-            {NAV.slice(1).map((n) => (
-              <li key={n.href}><Link href={n.href}>{n.label}</Link></li>
-            ))}
+            {menu.map((n, i) => <li key={i}><NavLink item={n} /></li>)}
           </ul>
         </nav>
-        <MobileNav items={NAV} />
+        <MobileNav items={mobile} />
       </div>
     </header>
   );
