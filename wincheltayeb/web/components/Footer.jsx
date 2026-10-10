@@ -34,7 +34,7 @@ export default function Footer({ settings, services, areas }) {
         </div>
       </div>
       <div className="wrap footer-bottom">
-        <p>© {year} ونش إنقاذ الطيب. كل الحقوق محفوظة. بنخدم محافظة السويس بس.</p>
+        <p>© {year} ونش إنقاذ الطيب. كل الحقوق محفوظة. بنخدم محافظة السويس والعين السخنة والجلالة ولحد الزعفرانة.</p>
       </div>
     </footer>
   );

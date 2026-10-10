@@ -222,3 +222,58 @@ function youtube_id(string $url): ?string {
     if (preg_match('~(?:youtu\.be/|youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/))([A-Za-z0-9_-]{11})~', $url, $m)) return $m[1];
     return preg_match('~^[A-Za-z0-9_-]{11}$~', $url) ? $url : null;
 }
+
+/* ---------- Sitemap + IndexNow ---------- */
+/** مفتاح IndexNow متولد من السر المشترك، والموقع بيولّد نفس المفتاح على /indexnow.txt */
+function indexnow_key(): string {
+    $secret = (string) cfg('revalidate_secret');
+    return $secret === '' ? '' : substr(hash('sha256', $secret . '|indexnow'), 0, 32);
+}
+
+function http_get(string $url, int $timeout = 20): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTPHEADER => ['Cache-Control: no-cache'], CURLOPT_USERAGENT => 'WinchElTayebAdmin/1.0']);
+    $body = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    return [$code, (string) $body];
+}
+
+/** بيحدّث الموقع، وبيقرا خريطة الموقع، وبيبلّغ IndexNow (Bing وYandex وغيرهم) */
+function refresh_sitemap_and_ping(): array {
+    $site = rtrim((string) cfg('site_url'), '/');
+    $rev = revalidate_site();
+    sleep(2);
+    [$code, $xml] = http_get($site . '/sitemap.xml?t=' . time());
+    $urls = [];
+    if ($code === 200 && preg_match_all('~<loc>\s*([^<\s]+)\s*</loc>~', $xml, $m)) $urls = array_values(array_unique(array_map('html_entity_decode', $m[1])));
+    $res = ['at' => date('Y-m-d H:i:s'), 'revalidate' => $rev['msg'], 'sitemap_code' => $code, 'urls' => count($urls)];
+
+    $key = indexnow_key();
+    if (!$urls) { $res['indexnow'] = 'مقدرناش نقرا خريطة الموقع (كود ' . $code . ')'; $res['ok'] = false; }
+    elseif ($key === '') { $res['indexnow'] = 'revalidate_secret مش متظبط، فمفيش مفتاح IndexNow'; $res['ok'] = false; }
+    else {
+        [$kcode, $kbody] = http_get($site . '/indexnow.txt');
+        if ($kcode !== 200 || trim($kbody) !== $key) {
+            $res['indexnow'] = 'ملف المفتاح على الموقع مش مطابق. اتأكد إن REVALIDATE_SECRET في Coolify نفس اللي في config.local.php، وإن آخر نسخة من الموقع اتعملها Deploy.';
+            $res['ok'] = false;
+        } else {
+            $host = parse_url($site, PHP_URL_HOST);
+            $ch = curl_init('https://api.indexnow.org/indexnow');
+            curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+                CURLOPT_POSTFIELDS => json_encode(['host' => $host, 'key' => $key, 'keyLocation' => $site . '/indexnow.txt', 'urlList' => array_slice($urls, 0, 10000)], JSON_UNESCAPED_SLASHES)]);
+            curl_exec($ch); $icode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+            $res['ok'] = in_array($icode, [200, 202], true);
+            $res['indexnow'] = match ($icode) {
+                200, 202 => 'IndexNow استلم ' . count($urls) . ' رابط (Bing وYandex وغيرهم)',
+                403 => 'IndexNow رفض المفتاح (403)',
+                422 => 'IndexNow رفض الروابط (422): اتأكد إن site_url هو نفس دومين الموقع',
+                429 => 'طلبات كتير على IndexNow (429). جرب بعد شوية',
+                0 => 'مقدرناش نوصل لسيرفر IndexNow من الاستضافة. جرب تاني بعد شوية',
+                default => "IndexNow رجّع كود $icode",
+            };
+        }
+    }
+    set_setting('_last_ping', json_encode($res, JSON_UNESCAPED_UNICODE));
+    return $res;
+}

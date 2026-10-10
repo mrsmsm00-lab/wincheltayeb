@@ -22,7 +22,7 @@ export default async function Areas() {
     .filter((g) => g.items.length);
   return (
     <>
-      <PageHead crumbs={crumbs} title="مناطق تغطية ونش الإنقاذ في السويس" lead="بنشتغل جوه محافظة السويس وبس، من جنيفة في الشمال لطريق الجلالة في الجنوب. اختار منطقتك." />
+      <PageHead crumbs={crumbs} title="مناطق تغطية ونش الإنقاذ في السويس" lead="بنشتغل في محافظة السويس كلها، من جنيفة في الشمال للجلالة والعين السخنة في الجنوب، ولحد الزعفرانة على طريق البحر. اختار منطقتك." />
       <section className="section">
         <div className="wrap">
           {groups.map((g) => (

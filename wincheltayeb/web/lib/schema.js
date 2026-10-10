@@ -9,7 +9,7 @@ export function businessSchema(settings, areas) {
     "@id": BIZ_ID,
     name: settings.site_name || SITE_NAME,
     alternateName: ["ونش الطيب", "ونش إنقاذ السويس", "Winch El Tayeb"],
-    description: "ونش إنقاذ سيارات في محافظة السويس شغال 24 ساعة: ونش ملاكي، نقل تقيل وميكروباص، موتوسيكلات، وخدمات طريق.",
+    description: "ونش إنقاذ سيارات في محافظة السويس والعين السخنة والجلالة ولحد الزعفرانة، شغال 24 ساعة: ونش ملاكي، نقل تقيل وميكروباص، موتوسيكلات، وخدمات طريق.",
     url: SITE_URL,
     telephone: settings.phone_intl,
     image: abs("/og.png"),
@@ -25,6 +25,7 @@ export function businessSchema(settings, areas) {
     },
     areaServed: [
       { "@type": "AdministrativeArea", name: "محافظة السويس" },
+      { "@type": "Place", name: "الزعفرانة، محافظة البحر الأحمر" },
       ...areas.map((a) => ({
         "@type": "Place",
         name: a.place_name || a.title,
