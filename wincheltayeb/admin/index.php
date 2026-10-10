@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/layout.php';
+require __DIR__ . '/includes/stats.php';
 $user = require_login();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'revalidate') {
@@ -26,6 +27,26 @@ $drafts = (int) db()->query('SELECT COUNT(*) FROM posts WHERE published = 0')->f
 $noLatLng = (int) db()->query("SELECT COUNT(*) FROM posts WHERE type='area' AND (lat IS NULL OR lng IS NULL)")->fetchColumn();
 $shortMeta = (int) db()->query("SELECT COUNT(*) FROM posts WHERE length(meta_description) < 70")->fetchColumn();
 
+// الأكثر زيارة في آخر 30 يوم لكل نوع
+$PS = page_stats('30');
+$tops = [];
+foreach (['area' => 'المناطق', 'blog' => 'المقالات', 'service' => 'الخدمات'] as $t => $label) {
+    $items = [];
+    foreach (db()->query("SELECT id, title, slug FROM posts WHERE type = " . db()->quote($t) . " AND published = 1") as $p) {
+        $st = $PS[post_path($t, $p['slug'])] ?? [];
+        if (!empty($st['v'])) $items[] = $p + ['st' => $st, 'edit' => 'post_edit.php?id=' . $p['id']];
+    }
+    usort($items, fn($a, $b) => $b['st']['v'] <=> $a['st']['v']);
+    $tops[$t] = [$label, array_slice($items, 0, 5), "posts.php?type=$t&order=views&period=30"];
+}
+$items = [];
+foreach (db()->query('SELECT id, name AS title, slug FROM landing_pages') as $p) {
+    $st = $PS['/' . $p['slug']] ?? [];
+    if (!empty($st['v'])) $items[] = $p + ['st' => $st, 'edit' => 'landing_edit.php?id=' . $p['id']];
+}
+usort($items, fn($a, $b) => $b['st']['v'] <=> $a['st']['v']);
+$tops['landing'] = ['صفحات الهبوط', array_slice($items, 0, 5), 'landing.php?order=views&period=30'];
+
 layout_start('الرئيسية', 'index');
 ?>
 <h1>أهلاً <?= h($user['username']) ?></h1>
@@ -35,6 +56,20 @@ layout_start('الرئيسية', 'index');
   <?php endforeach; ?>
   <a class="stat" href="gallery.php"><strong><?= $gallery ?></strong><span>صور وفيديوهات</span></a>
 </div>
+
+<section class="box">
+  <h2>الأكثر زيارة في آخر 30 يوم</h2>
+  <div class="tops">
+  <?php foreach ($tops as [$label, $items, $more]): $max = max(1, ...array_map(fn($i) => $i['st']['v'], $items ?: [['st' => ['v' => 1]]])); ?>
+    <div>
+      <h3><?= h($label) ?> <a href="<?= h($more) ?>" class="more-sm">الترتيب الكامل</a></h3>
+      <?php if (!$items): ?><p class="muted">لسه مفيش زيارات.</p><?php else: ?>
+      <ol class="top-list"><?php foreach ($items as $i): ?><li><a href="<?= h($i['edit']) ?>"><?= h($i['title']) ?></a><?= views_cell($i['st'], $max) ?></li><?php endforeach; ?></ol>
+      <?php endif; ?>
+    </div>
+  <?php endforeach; ?>
+  </div>
+</section>
 
 <div class="cols">
   <section class="box">

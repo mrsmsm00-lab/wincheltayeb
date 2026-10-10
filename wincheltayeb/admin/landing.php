@@ -51,6 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $list = db()->query('SELECT * FROM landing_pages ORDER BY updated_at DESC')->fetchAll();
+$period = view_period();
+$PS = page_stats($period);
+$order = $_GET['order'] ?? 'views';
+foreach ($list as &$l) $l['st'] = $PS['/' . $l['slug']] ?? [];
+unset($l);
+$val = fn($r, $k) => (int) ($r['st'][$k] ?? 0);
+if ($order === 'views') usort($list, fn($a, $b) => $val($b, 'v') <=> $val($a, 'v'));
+if ($order === 'conv') usort($list, fn($a, $b) => [$val($b, 'c'), $val($b, 'v')] <=> [$val($a, 'c'), $val($a, 'v')]);
+$maxV = max(1, ...array_map(fn($r) => $val($r, 'v'), $list ?: [['st' => []]]));
 $since = strtotime('today') - 29 * 86400;
 $st = stats_db()->prepare('SELECT COUNT(*) n, SUM(is_ads) ads, SUM(CASE WHEN calls + whatsapps > 0 THEN 1 ELSE 0 END) c FROM sessions WHERE landing = ? AND started_at >= ?');
 
@@ -62,9 +71,13 @@ layout_start('صفحات الهبوط', 'landing');
 </div>
 
 <section class="box">
-  <h2>صفحاتك</h2>
+  <div class="head-row"><h2>صفحاتك</h2>
+  <form method="get" class="search">
+    <select name="order" aria-label="الترتيب"><option value="views"<?= $order === 'views' ? ' selected' : '' ?>>الأكثر زيارة</option><option value="conv"<?= $order === 'conv' ? ' selected' : '' ?>>الأكثر اتصال وواتساب</option><option value="updated"<?= $order === 'updated' ? ' selected' : '' ?>>آخر تعديل</option></select>
+    <select name="period" aria-label="الفترة"><?php foreach (VIEW_PERIODS as $k => $l): ?><option value="<?= $k ?>"<?= $period === (string) $k ? ' selected' : '' ?>><?= h($l) ?></option><?php endforeach; ?></select>
+    <button class="btn btn-ghost">طبّق</button></form></div>
   <div class="table-wrap"><table class="table">
-    <thead><tr><th>الاسم</th><th>الرابط</th><th>القالب</th><th>الحالة</th><th>آخر 30 يوم</th><th></th></tr></thead>
+    <thead><tr><th>الاسم</th><th>الرابط</th><th>الزيارات</th><th>القالب</th><th>الحالة</th><th>آخر 30 يوم</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($list as $lp):
       $tpl = lp_templates()[$lp['template']] ?? null;
@@ -72,6 +85,7 @@ layout_start('صفحات الهبوط', 'landing');
       <tr>
         <td><a href="landing_edit.php?id=<?= (int) $lp['id'] ?>"><strong><?= h($lp['name']) ?></strong></a><?= $lp['noindex'] ? ' <span class="tag">مخفية عن جوجل</span>' : ' <span class="tag">ظاهرة لجوجل</span>' ?></td>
         <td dir="ltr"><a href="<?= h(lp_url($lp['slug']) . ($lp['published'] ? '' : '?preview=' . lp_preview_token($lp['slug']))) ?>" target="_blank" rel="noopener">/<?= h($lp['slug']) ?></a></td>
+        <td><?= views_cell($lp['st'], $maxV) ?></td>
         <td><?= $tpl ? lp_swatch($tpl) . ' ' . h($tpl['name']) : h($lp['template']) ?></td>
         <td><form method="post" class="inline"><?= csrf_field() ?><input type="hidden" name="action" value="toggle"><input type="hidden" name="id" value="<?= (int) $lp['id'] ?>"><button class="pill <?= $lp['published'] ? 'pill-on' : 'pill-off' ?>"><?= $lp['published'] ? 'منشورة' : 'مسودة' ?></button></form></td>
         <td><?= (int) $s['n'] ?> زيارة • <?= (int) $s['ads'] ?> من إعلان • <strong><?= (int) $s['c'] ?> تواصل (<?= pct((int) $s['c'], (int) $s['n']) ?>)</strong></td>
@@ -83,7 +97,7 @@ layout_start('صفحات الهبوط', 'landing');
         </td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$list): ?><tr><td colspan="6" class="muted">لسه مفيش صفحات هبوط. اختار قالب من تحت.</td></tr><?php endif; ?>
+    <?php if (!$list): ?><tr><td colspan="7" class="muted">لسه مفيش صفحات هبوط. اختار قالب من تحت.</td></tr><?php endif; ?>
     </tbody>
   </table></div>
 </section>

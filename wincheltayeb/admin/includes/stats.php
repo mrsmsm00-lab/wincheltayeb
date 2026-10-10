@@ -229,3 +229,40 @@ function lp_paths(): array {
     return $p;
 }
 const STATS_SCOPES = ['site' => 'الموقع (من غير صفحات الهبوط)', 'lp' => 'صفحات الهبوط بس', 'all' => 'الكل'];
+
+/* ---------- عداد الزيارات لكل صفحة (للقوايم في اللوحة) ---------- */
+const VIEW_PERIODS = ['7' => 'آخر 7 أيام', '30' => 'آخر 30 يوم', '90' => 'آخر 90 يوم', '365' => 'آخر سنة', 'all' => 'من الأول'];
+
+function view_period(): string { $p = (string) ($_GET['period'] ?? '30'); return isset(VIEW_PERIODS[$p]) ? $p : '30'; }
+
+/** زيارات كل رابط: [المسار => ['v' => مشاهدات، 'u' => زيارات مختلفة، 'c' => ضغطات اتصال وواتساب، 'e' => زيارات دخلت منه]] */
+function page_stats(?string $period = null): array {
+    static $cache = [];
+    $period ??= view_period();
+    if (isset($cache[$period])) return $cache[$period];
+    $since = $period === 'all' ? 0 : strtotime('today') - ((int) $period - 1) * 86400;
+    $norm = fn($p) => rtrim(rawurldecode((string) $p), '/') ?: '/';
+    $out = [];
+    try {
+        $db = stats_db();
+        $s = $db->prepare('SELECT path, COUNT(*) v, COUNT(DISTINCT sid) u FROM pageviews WHERE ts >= ? GROUP BY path'); $s->execute([$since]);
+        foreach ($s as $r) { $k = $norm($r['path']); $out[$k]['v'] = ($out[$k]['v'] ?? 0) + $r['v']; $out[$k]['u'] = ($out[$k]['u'] ?? 0) + $r['u']; }
+        $s = $db->prepare("SELECT path, COUNT(*) c FROM events WHERE ts >= ? AND category IN ('call','whatsapp') GROUP BY path"); $s->execute([$since]);
+        foreach ($s as $r) { $k = $norm($r['path']); $out[$k]['c'] = ($out[$k]['c'] ?? 0) + $r['c']; }
+        $s = $db->prepare('SELECT landing, COUNT(*) e FROM sessions WHERE started_at >= ? GROUP BY landing'); $s->execute([$since]);
+        foreach ($s as $r) { $k = $norm($r['landing']); $out[$k]['e'] = ($out[$k]['e'] ?? 0) + $r['e']; }
+    } catch (Throwable) {}
+    return $cache[$period] = $out;
+}
+
+function post_path(string $type, string $slug): string {
+    $p = POST_TYPES[$type]['path'] ?? '';
+    return ($p ? "/$p/" : '/') . $slug;
+}
+
+/** عمود صغير فيه الأرقام وشريط نسبة */
+function views_cell(array $st, int $max): string {
+    $v = (int) ($st['v'] ?? 0); $u = (int) ($st['u'] ?? 0); $c = (int) ($st['c'] ?? 0);
+    $w = $max ? round($v * 100 / $max) : 0;
+    return '<span class="views"><strong>' . number_format($v) . '</strong><small>' . number_format($u) . ' زيارة' . ($c ? ' • <b class="conv">' . $c . ' تواصل</b>' : '') . '</small><i style="width:' . $w . '%"></i></span>';
+}

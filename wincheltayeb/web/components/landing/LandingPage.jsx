@@ -1,5 +1,6 @@
 import templates from "@/content/lp-templates.json";
 import Markdown from "@/components/Markdown";
+import { sanitizeCustomPage } from "@/components/landing/customHtml";
 import JsonLd from "@/components/JsonLd";
 import Icon from "@/components/Icon";
 import GadsConversions from "@/components/GadsConversions";
@@ -73,12 +74,22 @@ function Buttons({ ctx, where, big = false, only = "both" }) {
   );
 }
 
-function Hero({ variant, d, ctx, title }) {
+function Hero({ variant: baseVariant, d, ctx, title, heroLogo }) {
   const sub = fillText(d.subheadline, ctx);
   const showPhone = d.show_phone !== false;
-  const badge = d.badge && <p className="lp-badge"><span className="lp-dot" aria-hidden="true" />{fillText(d.badge, ctx)}</p>;
+  const pos = d.image_position || "auto";
+  const hasImg = isUrl(d.image || d.hero_image);
+  // مكان الصورة بيغيّر شكل الواجهة لو اتحدد
+  const variant = hasImg && pos === "side" ? "split" : hasImg && pos === "background" ? "photo" : baseVariant;
+  const topImg = hasImg && pos === "top";
+  const noImg = pos === "none";
+  const showArt = d.show_art !== false && !noImg;
+  const overlay = Math.max(0, Math.min(90, Number(d.overlay ?? 55))) / 100;
+  const logoEl = heroLogo ? <img className="lp-hero-logo" src={heroLogo.src} alt={heroLogo.alt} /> : null;
+  const topEl = topImg ? <img className="lp-hero-topimg" src={d.image || d.hero_image} alt={title} fetchPriority="high" /> : null;
+  const badge = <>{logoEl}{topEl}{d.badge && <p className="lp-badge"><span className="lp-dot" aria-hidden="true" />{fillText(d.badge, ctx)}</p>}</>;
   const eta = d.eta && <p className="lp-eta"><Icon name="clock" size={18} /> {fillText(d.eta, ctx)}</p>;
-  const img = d.image || d.hero_image;
+  const img = noImg || topImg ? "" : d.image || d.hero_image;
   switch (variant) {
     case "sign":
       return (
@@ -102,13 +113,13 @@ function Hero({ variant, d, ctx, title }) {
         <section className="lp-hero lp-hero-split">
           <div className="lp-wrap lp-split">
             <div className="lp-hero-copy">{badge}<h1>{title}</h1><p className="lp-sub">{sub}</p>{eta}<Buttons ctx={ctx} where="الواجهة" big /></div>
-            <div className="lp-hero-media">{img ? <img src={img} alt={title} fetchPriority="high" /> : <TruckArt />}</div>
+            {(img || showArt) && <div className="lp-hero-media">{img ? <img src={img} alt={title} fetchPriority="high" /> : <TruckArt />}</div>}
           </div>
         </section>
       );
     case "photo":
       return (
-        <section className="lp-hero lp-hero-photo" style={img ? { "--lp-photo": `url("${img.replace(/"/g, "")}")` } : undefined}>
+        <section className="lp-hero lp-hero-photo" style={{ "--lp-overlay": overlay, ...(img ? { "--lp-photo": `url("${img.replace(/["()\\]/g, "")}")` } : {}) }}>
           <div className="lp-wrap lp-center">{badge}<h1>{title}</h1><p className="lp-sub">{sub}</p>{eta}<Buttons ctx={ctx} where="الواجهة" big /></div>
         </section>
       );
@@ -157,9 +168,19 @@ export default function LandingPage({ lp, settings, keyword }) {
   ctx.waHref = `https://wa.me/${wa}?text=${encodeURIComponent(fillText(d.wa_message || "السلام عليكم، محتاج ونش إنقاذ", ctx))}`;
   const title = landingTitle(lp, settings, keyword);
   const btn = d.button_style || t.buttons;
-  const c = { ...t.colors, ...(d.primary_override ? { primary: d.primary_override } : {}) };
+  if (d.mode === "custom") return <CustomLanding lp={lp} d={d} t={t} ctx={ctx} settings={settings} title={title} />;
+  const hex = (v) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : null);
+  const c = { ...t.colors };
+  if (hex(d.primary_override)) c.primary = d.primary_override;
+  for (const k of ["onPrimary", "accent", "heroBg", "heroText", "bg", "surface", "text"]) if (hex(d[`c_${k}`])) c[k] = d[`c_${k}`];
   const vars = Object.fromEntries(Object.entries(c).map(([k, v]) => [`--lp-${k}`, v]));
   const logo = (isUrl(d.logo) && d.logo) || (isUrl(settings.site_logo) && settings.site_logo) || "/logo.svg";
+  const logoPos = d.logo_position || "start";
+  const header = d.header_style || "solid";
+  const showName = d.show_name !== false && d.show_name !== "0";
+  const heroVariant = d.hero_layout || t.hero;
+  const css = String(d.custom_css || "").replace(/<\/?style/gi, "");
+  const ctxBase = ctx;
   const blocks = blocksOf(d).filter((b) => b && b.enabled !== false);
   const F = (x) => fillText(x, ctx);
   const allFaqs = [];
@@ -173,7 +194,7 @@ export default function LandingPage({ lp, settings, keyword }) {
     switch (b.type) {
       case "hero":
         if (heroDone) return null; heroDone = true;
-        return <Hero key={b.id} variant={t.hero} d={b} ctx={ctx} title={title} />;
+        return <Hero key={b.id} variant={heroVariant} d={b} ctx={ctx} title={title} heroLogo={logoPos === "hero" ? { src: logo, alt: settings.site_name || "" } : null} />;
       case "trust": {
         const it = lines(b.items); if (!it.length) return null;
         return <section key={b.id} className={`lp-trust lp-bg-${b.bg || "none"}`}><ul className="lp-wrap">{it.map((x, i) => <li key={i}><span aria-hidden="true">✓</span>{F(x)}</li>)}</ul></section>;
@@ -248,16 +269,17 @@ export default function LandingPage({ lp, settings, keyword }) {
   const content = blocks.map(render);
 
   return (
-    <div className={`lp lp-${t.id} lp-btn-${btn}`} style={vars}>
+    <div className={`lp lp-${t.id} lp-btn-${btn} lp-r-${d.radius || "soft"} lp-logo-size-${d.logo_size || "md"}${header === "transparent" ? " lp-has-transparent-head" : ""}`} style={vars}>
+      {css && <style dangerouslySetInnerHTML={{ __html: css }} />}
       {lp.preview && <div className="lp-preview-note">معاينة: الصفحة دي مسودة ومحدش شايفها غيرك</div>}
-      <header className={`lp-top${btn === "topbar" ? " lp-top-fixed" : ""}`}>
+      {header !== "hidden" && <header className={`lp-top lp-head-${header} lp-logo-${logoPos}${btn === "topbar" ? " lp-top-fixed" : ""}`}>
         <div className="lp-wrap lp-top-inner">
-          <span className="lp-brand"><img src={logo} alt={settings.site_name || ""} height="40" /> <span>{settings.site_name || "ونش إنقاذ الطيب"}</span></span>
+          {logoPos !== "hero" && logoPos !== "hidden" ? <span className="lp-brand"><img src={logo} alt={settings.site_name || ""} /> {showName && <span>{settings.site_name || "ونش إنقاذ الطيب"}</span>}</span> : <span />}
           {btn === "topbar"
             ? <Buttons ctx={ctx} where="الشريط اللي فوق" />
             : <a className="lp-top-phone" href={`tel:${ctx.tel}`} data-track-label="الرقم في الهيدر"><Icon name="phone" size={18} /> <bdi dir="ltr">{phone}</bdi></a>}
         </div>
-      </header>
+      </header>}
 
       <main id="main">
         {!heroDone && <h1 className="sr-only">{title}</h1>}
@@ -283,6 +305,39 @@ export default function LandingPage({ lp, settings, keyword }) {
 
       {settings.gads_id && <GadsConversions id={settings.gads_id} callLabel={settings.gads_call_label} waLabel={settings.gads_wa_label} />}
       <JsonLd data={allFaqs.length ? faqSchema(allFaqs) : null} />
+    </div>
+  );
+}
+
+/* ===== وضع HTML مخصص بالكامل ===== */
+function CustomLanding({ lp, d, t, ctx, settings, title }) {
+  const hex = (v) => (/^#[0-9a-fA-F]{6}$/.test(v || "") ? v : null);
+  const c = { ...t.colors };
+  if (hex(d.primary_override)) c.primary = d.primary_override;
+  for (const k of ["onPrimary", "accent", "heroBg", "heroText", "bg", "surface", "text"]) if (hex(d[`c_${k}`])) c[k] = d[`c_${k}`];
+  const vars = Object.fromEntries(Object.entries(c).map(([k, v]) => [`--lp-${k}`, v]));
+  const logo = (isUrl(d.logo) && d.logo) || (isUrl(settings.site_logo) && settings.site_logo) || "/logo.svg";
+  const esc = (x) => String(x).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+  const html = String(d.custom_html || "")
+    .replaceAll("{call_button}", `<a class="lp-btn lp-btn-call" href="tel:${ctx.tel}" data-track-label="${esc(ctx.callLabel)} • تصميم مخصص"><b>${esc(ctx.callLabel)}</b></a>`)
+    .replaceAll("{wa_button}", `<a class="lp-btn lp-btn-wa" href="${esc(ctx.waHref)}" target="_blank" rel="noopener" data-track-label="${esc(ctx.waLabel)} • تصميم مخصص"><b>${esc(ctx.waLabel)}</b></a>`)
+    .replaceAll("{phone}", esc(ctx.phone)).replaceAll("{tel}", `tel:${ctx.tel}`).replaceAll("{whatsapp_link}", ctx.waHref)
+    .replaceAll("{logo}", logo).replaceAll("{keyword}", esc(ctx.keyword)).replaceAll("{area}", esc(ctx.area));
+  return (
+    <div className={`lp-custom-page lp-${t.id}`} style={vars}>
+      {lp.preview && <div className="lp-preview-note">معاينة: الصفحة دي مسودة ومحدش شايفها غيرك</div>}
+      {d.custom_header && (
+        <header className="lp-top"><div className="lp-wrap lp-top-inner">
+          <span className="lp-brand"><img src={logo} alt={settings.site_name || ""} /> <span>{settings.site_name}</span></span>
+          <a className="lp-top-phone" href={`tel:${ctx.tel}`} data-track-label="الرقم في الهيدر"><Icon name="phone" size={18} /> <bdi dir="ltr">{ctx.phone}</bdi></a>
+        </div></header>
+      )}
+      <main id="main">
+        {!/<h1[\s>]/i.test(html) && <h1 className="sr-only">{title}</h1>}
+        <div className="lp-custom" dangerouslySetInnerHTML={{ __html: sanitizeCustomPage(html) }} />
+      </main>
+      {d.custom_sticky !== false && <div className="lp-sticky lp-sticky-mobile"><Buttons ctx={ctx} where="الشريط الثابت (موبايل)" /></div>}
+      {settings.gads_id && <GadsConversions id={settings.gads_id} callLabel={settings.gads_call_label} waLabel={settings.gads_wa_label} />}
     </div>
   );
 }

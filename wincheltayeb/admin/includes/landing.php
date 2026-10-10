@@ -64,7 +64,7 @@ function lp_swatch(array $t): string {
 /* ================= أقسام صفحة الهبوط (بناء حر) ================= */
 const LP_BG = ['' => 'عادي', 'alt' => 'لون هادي', 'primary' => 'لون القالب', 'dark' => 'غامق'];
 const LP_BLOCKS = [
-    'hero' => ['label' => 'الواجهة', 'single' => true, 'fields' => ['badge' => 's', 'headline' => 's', 'subheadline' => 't', 'eta' => 's', 'image' => 'u', 'show_phone' => 'b']],
+    'hero' => ['label' => 'الواجهة', 'single' => true, 'fields' => ['badge' => 's', 'headline' => 's', 'subheadline' => 't', 'eta' => 's', 'image' => 'u', 'image_position' => 'img_pos', 'overlay' => 'pct', 'show_phone' => 'b', 'show_art' => 'b']],
     'trust' => ['label' => 'نقط الثقة', 'fields' => ['items' => 't', 'bg' => 'bg']],
     'services' => ['label' => 'الخدمات', 'fields' => ['title' => 's', 'items' => 't', 'bg' => 'bg']],
     'cta' => ['label' => 'أزرار اتصال', 'fields' => ['title' => 's', 'text' => 't', 'buttons' => 'btns', 'size' => 'size', 'bg' => 'bg']],
@@ -79,11 +79,29 @@ const LP_BLOCKS = [
     'final' => ['label' => 'الشريط الأخير', 'single' => true, 'fields' => ['text' => 's']],
 ];
 const LP_GLOBALS = ['logo' => 'u', 'area_name' => 's', 'keyword_default' => 's', 'call_label' => 's', 'wa_label' => 's', 'wa_message' => 's',
-    'phone' => 's', 'whatsapp' => 's', 'button_style' => 'b', 'primary_override' => 'c', 'meta_title' => 's', 'meta_description' => 't', 'og_image' => 'u'];
+    'phone' => 's', 'whatsapp' => 's', 'button_style' => 'b', 'primary_override' => 'c', 'meta_title' => 's', 'meta_description' => 't', 'og_image' => 'u',
+    // التصميم
+    'mode' => 'mode', 'logo_position' => 'logo_pos', 'logo_size' => 'logo_size', 'show_name' => 'b', 'header_style' => 'header',
+    'hero_layout' => 'layout', 'radius' => 'radius', 'custom_css' => 'css',
+    'c_onPrimary' => 'c', 'c_accent' => 'c', 'c_heroBg' => 'c', 'c_heroText' => 'c', 'c_bg' => 'c', 'c_surface' => 'c', 'c_text' => 'c',
+    // HTML مخصص
+    'custom_html' => 'h', 'custom_header' => 'b', 'custom_sticky' => 'b'];
+
+const LP_DESIGN_OPTIONS = [
+    'mode' => ['blocks' => 'قالب بالأقسام', 'custom' => 'HTML مخصص بالكامل'],
+    'logo_pos' => ['start' => 'يمين الهيدر', 'center' => 'نص الهيدر', 'end' => 'شمال الهيدر', 'hero' => 'جوه الواجهة فوق العنوان', 'hidden' => 'مخفي'],
+    'logo_size' => ['md' => 'متوسط', 'sm' => 'صغير', 'lg' => 'كبير', 'xl' => 'كبير جداً'],
+    'header' => ['solid' => 'عادي', 'transparent' => 'شفاف فوق الواجهة', 'primary' => 'بلون القالب', 'dark' => 'غامق', 'hidden' => 'مخفي'],
+    'layout' => ['' => 'زي القالب', 'sign' => 'لافتة طريق', 'center' => 'كلام في النص', 'split' => 'كلام وصورة جنب بعض', 'photo' => 'صورة خلفية', 'stripes' => 'شريط تحذير', 'minimal' => 'بسيط والرقم كبير'],
+    'radius' => ['soft' => 'حواف ناعمة', 'round' => 'دائرية', 'square' => 'مربعة'],
+    'img_pos' => ['auto' => 'زي شكل الواجهة', 'side' => 'جنب الكلام', 'background' => 'خلفية', 'top' => 'فوق العنوان', 'none' => 'مفيش صورة'],
+];
+const LP_COLOR_LABELS = ['primary_override' => 'اللون الأساسي (الأزرار)', 'c_onPrimary' => 'لون الكلام على الأساسي', 'c_accent' => 'لون مساعد',
+    'c_heroBg' => 'خلفية الواجهة', 'c_heroText' => 'كلام الواجهة', 'c_bg' => 'خلفية الصفحة', 'c_surface' => 'خلفية الأقسام الهادية', 'c_text' => 'لون الكلام'];
 
 function lp_block_defaults(string $type): array {
     return match ($type) {
-        'hero' => ['badge' => 'متاحين دلوقتي 24 ساعة', 'headline' => '{keyword} في {area} خلال دقايق', 'subheadline' => 'عربيتك عطلت أو عملت حادثة؟ اتصل دلوقتي، هنقولك السعر النهائي ووقت الوصول قبل ما الونش يتحرك.', 'eta' => 'بنوصلك في المتوسط خلال 30 دقيقة', 'image' => '', 'show_phone' => true],
+        'hero' => ['badge' => 'متاحين دلوقتي 24 ساعة', 'headline' => '{keyword} في {area} خلال دقايق', 'subheadline' => 'عربيتك عطلت أو عملت حادثة؟ اتصل دلوقتي، هنقولك السعر النهائي ووقت الوصول قبل ما الونش يتحرك.', 'eta' => 'بنوصلك في المتوسط خلال 30 دقيقة', 'image' => '', 'image_position' => 'auto', 'overlay' => 55, 'show_phone' => true, 'show_art' => true],
         'trust' => ['items' => lp_defaults()['trust'], 'bg' => 'alt'],
         'services' => ['title' => 'خدماتنا في {area}', 'items' => lp_defaults()['services'], 'bg' => ''],
         'cta' => ['title' => 'محتاج ونش دلوقتي؟', 'text' => 'كلمنا أو ابعت لوكيشن، والونش يتحرك على طول.', 'buttons' => 'both', 'size' => 'big', 'bg' => 'alt'],
@@ -138,6 +156,10 @@ function lp_clean_value(string $kind, $v) {
         'side' => $v === 'end' ? 'end' : 'start',
         'f' => clean_format($v),
         'c' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) $v) ? (string) $v : '',
+        'mode' => $v === 'custom' ? 'custom' : 'blocks',
+        'logo_pos', 'logo_size', 'header', 'layout', 'radius', 'img_pos' => array_key_exists((string) $v, LP_DESIGN_OPTIONS[$kind]) ? (string) $v : (string) array_key_first(LP_DESIGN_OPTIONS[$kind]),
+        'pct' => max(0, min(90, (int) $v)),
+        'css' => mb_substr(str_ireplace('</style', '', str_replace("\r\n", "\n", (string) $v)), 0, 60000),
         default => '',
     };
 }
@@ -146,7 +168,7 @@ function lp_clean_value(string $kind, $v) {
 function lp_from_post(array $post): array {
     $g = (array) ($post['g'] ?? []);
     $out = [];
-    foreach (LP_GLOBALS as $f => $k) $out[$f] = $f === 'button_style' ? (array_key_exists((string) ($g[$f] ?? ''), LP_BUTTON_STYLES) ? (string) $g[$f] : '') : lp_clean_value($k, $g[$f] ?? '');
+    foreach (LP_GLOBALS as $f => $k) $out[$f] = $f === 'button_style' ? (array_key_exists((string) ($g[$f] ?? ''), LP_BUTTON_STYLES) ? (string) ($g[$f] ?? '') : '') : lp_clean_value($k, $g[$f] ?? '');
     $blocks = []; $seen = [];
     foreach ((array) ($post['order'] ?? []) as $bid) {
         $in = $post['b'][$bid] ?? null;
