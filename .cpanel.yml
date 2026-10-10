@@ -3,7 +3,7 @@
 # غيّر CPANELUSER لاسم المستخدم بتاعك، والمسار لمجلد الصب دومين
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/CPANELUSER/admin.wincheltayeb.com/
+    - export DEPLOYPATH=/home/winchessam/admin.wincheltayeb.com/
     - /bin/mkdir -p $DEPLOYPATH/data $DEPLOYPATH/uploads
     - /bin/rsync -a --exclude 'config.local.php' --exclude 'data/' --exclude 'uploads/' wincheltayeb/admin/ $DEPLOYPATH
     - /bin/cp wincheltayeb/admin/data/.htaccess $DEPLOYPATH/data/.htaccess
