@@ -144,3 +144,42 @@
     setStatus("رجعنا للنسخة اللي قبل الـ AI.", "");
   });
 })();
+
+// التصرفات الجماعية: علّم على الكل، العدد، والتأكيد قبل المسح
+(() => {
+  document.querySelectorAll("form[data-bulk]").forEach((form) => {
+    const id = form.id;
+    const items = () => [...document.querySelectorAll(`.bulk-item[form="${id}"]`)];
+    const all = document.querySelector(`.bulk-all[data-form="${id}"]`);
+    const count = form.querySelector(".bulk-count strong");
+    const btn = form.querySelector("button");
+    const op = form.querySelector('select[name="op"]');
+    const update = () => {
+      const list = items(); const n = list.filter((c) => c.checked).length;
+      count.textContent = n;
+      btn.disabled = n === 0 || (op && !op.value);
+      form.classList.toggle("has-selection", n > 0);
+      if (all) { all.checked = n > 0 && n === list.length; all.indeterminate = n > 0 && n < list.length; }
+      list.forEach((c) => c.closest("tr, li")?.classList.toggle("is-selected", c.checked));
+    };
+    items().forEach((c) => c.addEventListener("change", update));
+    if (all) all.addEventListener("change", () => { items().forEach((c) => (c.checked = all.checked)); update(); });
+    if (op) op.addEventListener("change", update);
+    // Shift + click لتحديد مجموعة متتالية
+    let last = null;
+    items().forEach((c) => c.addEventListener("click", (e) => {
+      const list = items();
+      if (e.shiftKey && last) {
+        const [a, b] = [list.indexOf(last), list.indexOf(c)].sort((x, y) => x - y);
+        list.slice(a, b + 1).forEach((x) => (x.checked = c.checked)); update();
+      }
+      last = c;
+    }));
+    form.addEventListener("submit", (e) => {
+      const n = items().filter((c) => c.checked).length;
+      const isDelete = (op ? op.value : form.dataset.op) === "delete";
+      if (isDelete && !confirm(`هتمسح ${n} عنصر نهائياً. متأكد؟`)) e.preventDefault();
+    });
+    update();
+  });
+})();

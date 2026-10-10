@@ -18,6 +18,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->prepare("UPDATE posts SET published = 1 - published, updated_at = date('now') WHERE id = ? AND type = ?")->execute([$id, $type]);
         revalidate_site();
         flash('اتغيرت حالة النشر.');
+    } elseif ($action === 'bulk') {
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['ids'] ?? [])))));
+        $op = $_POST['op'] ?? '';
+        if (!$ids) { flash('مفيش حاجة متعلّم عليها.', 'warn'); redirect("posts.php?type=$type"); }
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $args = array_merge($ids, [$type]);
+        if ($op === 'publish' || $op === 'draft') {
+            $st = db()->prepare("UPDATE posts SET published = ?, updated_at = date('now') WHERE id IN ($in) AND type = ?");
+            $st->execute(array_merge([$op === 'publish' ? 1 : 0], $args));
+            $msg = ($op === 'publish' ? 'اتنشر: ' : 'اتحول لمسودة: ') . $st->rowCount();
+        } elseif ($op === 'delete') {
+            $st = db()->prepare("DELETE FROM posts WHERE id IN ($in) AND type = ?");
+            $st->execute($args);
+            $msg = 'اتمسح: ' . $st->rowCount();
+        } else { flash('اختار العملية الأول.', 'warn'); redirect("posts.php?type=$type"); }
+        $r = revalidate_site();
+        flash($msg . '.' . ($r['ok'] ? ' والموقع اتحدث.' : ' ' . $r['msg']), $r['ok'] ? 'ok' : 'warn');
     } elseif ($action === 'sort') {
         $s = db()->prepare('UPDATE posts SET sort = ? WHERE id = ? AND type = ?');
         foreach ((array) ($_POST['sort'] ?? []) as $pid => $val) $s->execute([(int) $val, (int) $pid, $type]);
@@ -28,9 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $q = trim((string) ($_GET['q'] ?? ''));
+$status = $_GET['status'] ?? '';
 $sql = 'SELECT id, slug, title, published, sort, updated_at, district, length(body) AS len FROM posts WHERE type = ?';
 $args = [$type];
 if ($q !== '') { $sql .= ' AND (title LIKE ? OR slug LIKE ?)'; $args[] = "%$q%"; $args[] = "%$q%"; }
+if ($status === 'draft') $sql .= ' AND published = 0';
+if ($status === 'published') $sql .= ' AND published = 1';
 $sql .= $type === 'blog' ? ' ORDER BY published_at DESC' : ' ORDER BY sort, id';
 $st = db()->prepare($sql); $st->execute($args); $rows = $st->fetchAll();
 $districts = districts();
@@ -41,14 +61,28 @@ layout_start(POST_TYPES[$type]['label'], $type);
   <h1><?= h(POST_TYPES[$type]['label']) ?></h1>
   <a class="btn" href="post_edit.php?type=<?= h($type) ?>">+ <?= h(POST_TYPES[$type]['one']) ?> جديدة</a>
 </div>
-<form class="search" method="get"><input type="hidden" name="type" value="<?= h($type) ?>"><input name="q" value="<?= h($q) ?>" placeholder="دوّر بالعنوان أو الرابط"><button class="btn btn-ghost">بحث</button></form>
+<form class="search" method="get"><input type="hidden" name="type" value="<?= h($type) ?>"><input name="q" value="<?= h($q) ?>" placeholder="دوّر بالعنوان أو الرابط">
+  <select name="status" aria-label="الحالة"><option value="">الكل</option><option value="published"<?= $status === 'published' ? ' selected' : '' ?>>منشور</option><option value="draft"<?= $status === 'draft' ? ' selected' : '' ?>>مسودة</option></select>
+  <button class="btn btn-ghost">بحث</button></form>
+<form method="post" id="bulkform" class="bulk-bar" data-bulk>
+  <?= csrf_field() ?><input type="hidden" name="action" value="bulk">
+  <span class="bulk-count" aria-live="polite">محدد: <strong>0</strong></span>
+  <select name="op" aria-label="العملية الجماعية" required>
+    <option value="">اختار العملية…</option>
+    <option value="publish">انشر / اعتمد</option>
+    <option value="draft">حوّل لمسودة</option>
+    <option value="delete">امسح</option>
+  </select>
+  <button class="btn" disabled>نفّذ على المحدد</button>
+</form>
 <form method="post" id="sortform"><?= csrf_field() ?><input type="hidden" name="action" value="sort"></form>
 <div class="table-wrap">
 <table class="table">
-  <thead><tr><th>الترتيب</th><th>العنوان</th><?php if ($type === 'area'): ?><th>الحي</th><?php endif; ?><th>الطول</th><th>الحالة</th><th>آخر تعديل</th><th></th></tr></thead>
+  <thead><tr><th class="cb"><input type="checkbox" class="bulk-all" data-form="bulkform" aria-label="علّم على الكل"></th><th>الترتيب</th><th>العنوان</th><?php if ($type === 'area'): ?><th>الحي</th><?php endif; ?><th>الطول</th><th>الحالة</th><th>آخر تعديل</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($rows as $r): ?>
     <tr>
+      <td class="cb"><input type="checkbox" class="bulk-item" name="ids[]" value="<?= (int) $r['id'] ?>" form="bulkform" aria-label="<?= h($r['title']) ?>"></td>
       <td><input class="sort-input" type="number" name="sort[<?= (int) $r['id'] ?>]" value="<?= (int) $r['sort'] ?>" form="sortform"></td>
       <td><a href="post_edit.php?id=<?= (int) $r['id'] ?>"><strong><?= h($r['title']) ?></strong></a><br><small class="muted" dir="ltr"><?= h($r['slug']) ?></small></td>
       <?php if ($type === 'area'): ?><td><?= h($districts[$r['district']]['name'] ?? '—') ?></td><?php endif; ?>
@@ -65,7 +99,7 @@ layout_start(POST_TYPES[$type]['label'], $type);
       </td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$rows): ?><tr><td colspan="7" class="muted">مفيش نتايج. أضف <?= h(POST_TYPES[$type]['one']) ?> جديدة.</td></tr><?php endif; ?>
+  <?php if (!$rows): ?><tr><td colspan="8" class="muted">مفيش نتايج. أضف <?= h(POST_TYPES[$type]['one']) ?> جديدة.</td></tr><?php endif; ?>
   </tbody>
 </table>
 </div>

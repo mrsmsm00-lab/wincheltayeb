@@ -4,24 +4,29 @@ require __DIR__ . '/includes/layout.php';
 require_login();
 
 $errors = [];
+function gallery_delete(int $id): int {
+    $s = db()->prepare('SELECT url, thumb FROM gallery WHERE id = ?'); $s->execute([$id]);
+    $row = $s->fetch();
+    if (!$row) return 0;
+    $prefix = rtrim(cfg('admin_url'), '/') . '/uploads/';
+    $root = realpath(__DIR__ . '/uploads');
+    foreach ([$row['url'], $row['thumb']] as $u) {
+        if ($u && str_starts_with($u, $prefix)) {
+            $file = realpath(__DIR__ . '/uploads/' . substr($u, strlen($prefix)));
+            if ($file && $root && str_starts_with($file, $root)) @unlink($file);
+        }
+    }
+    db()->prepare('DELETE FROM gallery WHERE id = ?')->execute([$id]);
+    return 1;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $action = $_POST['action'] ?? '';
-    if ($action === 'delete') {
-        $id = (int) ($_POST['id'] ?? 0);
-        $s = db()->prepare('SELECT url, thumb FROM gallery WHERE id = ?'); $s->execute([$id]);
-        if ($row = $s->fetch()) {
-            foreach ([$row['url'], $row['thumb']] as $u) {
-                $prefix = rtrim(cfg('admin_url'), '/') . '/uploads/';
-                if ($u && str_starts_with($u, $prefix)) {
-                    $file = realpath(__DIR__ . '/uploads/' . substr($u, strlen($prefix)));
-                    if ($file && str_starts_with($file, realpath(__DIR__ . '/uploads'))) @unlink($file);
-                }
-            }
-            db()->prepare('DELETE FROM gallery WHERE id = ?')->execute([$id]);
-            revalidate_site();
-            flash('اتمسح.');
-        }
+    if ($action === 'delete' || $action === 'bulk_delete') {
+        $ids = $action === 'delete' ? [(int) ($_POST['id'] ?? 0)] : array_map('intval', (array) ($_POST['ids'] ?? []));
+        $n = 0;
+        foreach (array_unique(array_filter($ids)) as $id) $n += gallery_delete($id);
+        if ($n) { revalidate_site(); flash("اتمسح: $n."); } else flash('مفيش حاجة متعلّم عليها.', 'warn');
         redirect('gallery.php');
     }
     if ($action === 'add') {
@@ -70,9 +75,18 @@ layout_start('صور وفيديوهات', 'gallery');
   <button class="btn">أضف للمعرض</button>
 </form>
 
+<?php if ($items): ?>
+<form method="post" id="gbulk" class="bulk-bar" data-bulk data-op="delete">
+  <?= csrf_field() ?><input type="hidden" name="action" value="bulk_delete">
+  <label class="check"><input type="checkbox" class="bulk-all" data-form="gbulk"> علّم على الكل</label>
+  <span class="bulk-count" aria-live="polite">محدد: <strong>0</strong></span>
+  <button class="btn btn-danger" disabled>امسح المحدد</button>
+</form>
+<?php endif; ?>
 <ul class="admin-gallery">
 <?php foreach ($items as $g): ?>
   <li>
+    <label class="g-check"><input type="checkbox" class="bulk-item" name="ids[]" value="<?= (int) $g['id'] ?>" form="gbulk" aria-label="<?= h($g['title']) ?>"></label>
     <?php if ($g['kind'] === 'image'): ?><img src="<?= h($g['url']) ?>" alt="" loading="lazy">
     <?php elseif ($g['thumb']): ?><img src="<?= h($g['thumb']) ?>" alt="" loading="lazy">
     <?php else: ?><video src="<?= h($g['url']) ?>" muted preload="metadata"></video><?php endif; ?>
