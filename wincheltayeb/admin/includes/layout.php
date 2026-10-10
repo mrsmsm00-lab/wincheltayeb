@@ -11,6 +11,7 @@ function layout_start(string $title, string $active = ''): void {
     foreach (POST_TYPES as $k => $t) $nav[$k] = ["posts.php?type=$k", $t['label']];
     $nav['gallery'] = ['gallery.php', 'صور وفيديوهات'];
     $nav['import'] = ['import.php', 'استيراد'];
+    $nav['stats'] = ['stats.php', 'الإحصائيات'];
     $nav['settings'] = ['settings.php', 'الإعدادات'];
     ?><!doctype html>
 <html lang="ar" dir="rtl">

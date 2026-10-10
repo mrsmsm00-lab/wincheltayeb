@@ -12,7 +12,8 @@ function ai_bump_usage(): void { set_setting('_ai_usage_' . date('Y-m-d'), (stri
 function ai_mask(string $key): string { return $key === '' ? '' : substr($key, 0, 3) . '…' . substr($key, -4); }
 
 /** بيكلم OpenAI وبيرجع JSON متفكوك */
-function ai_chat(string $system, string $user): array {
+/** $user ممكن يبقى نص، أو مصفوفة (نص + صورة) للنماذج اللي بتشوف صور */
+function ai_chat(string $system, string|array $user): array {
     $key = ai_key();
     if ($key === '') throw new RuntimeException('مفتاح OpenAI مش متظبط. حطه من صفحة الإعدادات.');
     $base = rtrim((string) (cfg('openai_base_url') ?: 'https://api.openai.com/v1'), '/');
@@ -177,4 +178,30 @@ function ai_run(string $action, array $in): array {
             return ['faqs' => faqs_to_text($f)];
     }
     throw new RuntimeException('أمر مش معروف.');
+}
+
+/** بيوصف صورة من المعرض: عنوان ووصف بالمصري، ومن غير اختراع أماكن */
+function ai_describe_image(string $file, string $mime, string $areaName = ''): array {
+    if (!is_file($file)) throw new RuntimeException('الملف مش موجود.');
+    if (filesize($file) > 8 * 1024 * 1024) throw new RuntimeException('الصورة كبيرة على الوصف التلقائي (أكبر من 8 ميجا). صغّرها وارفعها تاني.');
+    $dataUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file));
+    $place = $areaName !== '' ? "المكان اللي المستخدم اختاره للصورة: «{$areaName}». استخدمه في العنوان." : 'المستخدم مختارش مكان، فمتكتبش أي اسم مكان.';
+    $system = "إنت بتكتب عناوين وأوصاف لصور معرض موقع «ونش إنقاذ الطيب»، ونش إنقاذ سيارات في محافظة السويس في مصر. "
+        . "اكتب باللهجة المصرية. اوصف اللي باين في الصورة بس: نوع العربية أو الونش، والموقف (سحب، تحميل على سطحة، حادثة، عطلة على طريق، بالليل أو بالنهار). "
+        . "ممنوع تخترع أماكن أو ماركات مش واضحة أو أرقام. ممنوع تكتب أرقام لوحات أو أسماء ناس. رد بـ JSON بس.";
+    $text = "$place\n\nاكتب JSON بالمفاتيح دي:\n"
+        . "{\"title\": عنوان قصير وطبيعي من 4 لـ 10 كلمات يوصف الصورة (مثال: «سطحة بتحمّل عربية ملاكي على طريق السخنة»)،\n"
+        . " \"caption\": وصف من جملة أو اتنين مفيد للزائر ولجوجل،\n"
+        . " \"privacy\": true لو فيه لوحة أرقام مقروءة أو وش واضح لشخص، وfalse غير كده،\n"
+        . " \"relevant\": true لو الصورة ليها علاقة بالعربيات أو الونش، وfalse غير كده}";
+    $d = ai_chat($system, [
+        ['type' => 'text', 'text' => $text],
+        ['type' => 'image_url', 'image_url' => ['url' => $dataUrl, 'detail' => 'low']],
+    ]);
+    return [
+        'title' => mb_substr(trim((string) ($d['title'] ?? '')), 0, 200),
+        'caption' => mb_substr(trim((string) ($d['caption'] ?? '')), 0, 1000),
+        'privacy' => !empty($d['privacy']),
+        'relevant' => !isset($d['relevant']) || !empty($d['relevant']),
+    ];
 }

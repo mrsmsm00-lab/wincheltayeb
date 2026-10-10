@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CallBar from "@/components/CallBar";
 import JsonLd from "@/components/JsonLd";
+import Tracker from "@/components/Tracker";
 import { getData } from "@/lib/content";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 import { businessSchema, websiteSchema } from "@/lib/schema";
@@ -47,6 +48,7 @@ export default async function RootLayout({ children }) {
         <main id="main">{children}</main>
         <Footer settings={settings} services={services} areas={areas} />
         <CallBar settings={settings} />
+        <Tracker />
         <JsonLd data={[businessSchema(settings, areas), websiteSchema()]} />
       </body>
     </html>
