@@ -233,3 +233,117 @@
     markDirty();
   }));
 })();
+
+// فحص الرابط وإنت بتكتبه: مكرر؟ محجوز؟
+(() => {
+  document.querySelectorAll("[data-slug-check]").forEach((input) => {
+    const out = input.closest("label")?.querySelector(".slug-status") || input.parentNode.appendChild(Object.assign(document.createElement("span"), { className: "slug-status" }));
+    let t = null, last = "";
+    const check = async () => {
+      const v = input.value.trim();
+      if (v === last) return; last = v;
+      if (!v) { out.textContent = ""; return; }
+      const u = new URLSearchParams({ kind: input.dataset.slugCheck, type: input.dataset.type || "", id: input.dataset.id || "0", slug: v });
+      try {
+        const r = await (await fetch("slug_check.php?" + u, { credentials: "same-origin" })).json();
+        out.className = "slug-status " + (r.ok ? "ok" : "bad");
+        out.innerHTML = "";
+        out.append(r.ok ? `✓ متاح: ` : `✗ ${r.msg} `);
+        if (r.ok) { const a = document.createElement("span"); a.dir = "ltr"; a.textContent = r.url; out.append(a); }
+        if (r.suggest) {
+          const b = document.createElement("button"); b.type = "button"; b.className = "link-btn"; b.textContent = `استخدم «${r.suggest}»`;
+          b.onclick = () => { input.value = r.suggest; last = ""; check(); };
+          out.append(b);
+        }
+        if (r.slug && r.slug !== v && r.ok) out.append(` (هيتحفظ كده: ${r.slug})`);
+        input.setCustomValidity(r.ok ? "" : r.msg);
+      } catch { out.textContent = ""; }
+    };
+    input.addEventListener("input", () => { clearTimeout(t); t = setTimeout(check, 350); });
+    input.addEventListener("blur", check);
+    if (input.value) check();
+  });
+})();
+
+// اختيار صور من المعرض لصفحة الهبوط
+(() => {
+  const ta = document.getElementById("lp-images");
+  if (!ta) return;
+  document.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => {
+    const lines = ta.value.split("\n").map((x) => x.trim()).filter(Boolean);
+    const u = b.dataset.pick;
+    const i = lines.indexOf(u);
+    if (i >= 0) lines.splice(i, 1); else lines.push(u);
+    ta.value = lines.join("\n");
+    b.classList.toggle("picked", i < 0);
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+  }));
+  const cur = ta.value.split("\n").map((x) => x.trim());
+  document.querySelectorAll("[data-pick]").forEach((b) => b.classList.toggle("picked", cur.includes(b.dataset.pick)));
+})();
+
+// رفع صور من أي خانة صورة: زرار «ارفع» جنب الخانة، أو كذا صورة لمعرض
+(() => {
+  const csrf = () => (document.querySelector('input[name="csrf"]') || {}).value || "";
+  const upload = async (file) => {
+    const fd = new FormData(); fd.append("csrf", csrf()); fd.append("file", file);
+    const r = await (await fetch("upload.php", { method: "POST", body: fd, credentials: "same-origin" })).json().catch(() => ({ ok: false, error: "رد مش مفهوم" }));
+    if (!r.ok) throw new Error(r.error || "الرفع فشل");
+    return r.url;
+  };
+  const pick = (multiple) => new Promise((resolve) => {
+    const i = document.createElement("input"); i.type = "file"; i.accept = "image/jpeg,image/png,image/webp,image/gif"; i.multiple = multiple;
+    i.onchange = () => resolve([...i.files]); i.click();
+  });
+  const preview = (field) => {
+    const inp = field.querySelector("[data-img-input]"), img = field.querySelector(".img-prev");
+    if (!inp || !img) return;
+    img.src = inp.value; img.hidden = !inp.value;
+  };
+  let galleryTarget = null;
+  document.addEventListener("click", async (e) => {
+    const up = e.target.closest("[data-upload]");
+    if (up) {
+      const field = up.closest(".img-field"); const inp = field.querySelector("[data-img-input]");
+      const [f] = await pick(false); if (!f) return;
+      up.disabled = true; const old = up.textContent; up.textContent = "بيرفع…";
+      try { inp.value = await upload(f); inp.dispatchEvent(new Event("input", { bubbles: true })); preview(field); }
+      catch (err) { alert(err.message); }
+      finally { up.disabled = false; up.textContent = old; }
+      return;
+    }
+    const multi = e.target.closest("[data-upload-multi]");
+    if (multi) {
+      const ta = multi.closest(".sec-body").querySelector('textarea[name$="[images]"]');
+      const files = await pick(true); if (!files.length) return;
+      multi.disabled = true;
+      for (let i = 0; i < files.length; i++) {
+        multi.textContent = `بيرفع ${i + 1} من ${files.length}…`;
+        try { const u = await upload(files[i]); ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + u; ta.dispatchEvent(new Event("input", { bubbles: true })); }
+        catch (err) { alert(files[i].name + ": " + err.message); }
+      }
+      multi.disabled = false; multi.textContent = "ارفع صور (كذا صورة مرة واحدة)";
+      return;
+    }
+    const po = e.target.closest("[data-pick-open]");
+    if (po) {
+      galleryTarget = po.closest(".sec-body").querySelector('textarea[name$="[images]"]');
+      document.querySelectorAll(".pick-gallery.small").forEach((g) => g.classList.add("picking"));
+      po.textContent = "دوس على الصور في «صور المعرض» على الجنب ✓";
+      document.querySelector(".pick-gallery.small")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    const cp = e.target.closest("[data-copy-url]");
+    if (cp) {
+      const u = cp.dataset.copyUrl;
+      if (galleryTarget) {
+        galleryTarget.value = (galleryTarget.value.trim() ? galleryTarget.value.trim() + "\n" : "") + u;
+        galleryTarget.dispatchEvent(new Event("input", { bubbles: true }));
+        cp.classList.add("picked");
+      } else {
+        try { await navigator.clipboard.writeText(u); cp.classList.add("picked"); setTimeout(() => cp.classList.remove("picked"), 800); } catch { prompt("انسخ الرابط:", u); }
+      }
+    }
+  });
+  document.addEventListener("input", (e) => { if (e.target.matches("[data-img-input]")) preview(e.target.closest(".img-field")); });
+})();

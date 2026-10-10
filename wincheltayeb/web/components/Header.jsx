@@ -25,7 +25,7 @@ export default function Header({ settings }) {
       </div>
       <div className="wrap header-inner">
         <Link href="/" className="brand" aria-label="ونش إنقاذ الطيب، الصفحة الرئيسية">
-          <img src="/logo.svg" alt="" width="44" height="44" />
+          <img src={/^(https?:\/\/|\/)[^\s"<>]*$/.test(settings.site_logo || "") ? settings.site_logo : "/logo.svg"} alt="" height="44" style={{ width: "auto", maxWidth: 160 }} />
           <span className="brand-text">
             <strong>{settings.site_name || "ونش إنقاذ الطيب"}</strong>
             <small>{settings.tagline || "ونش إنقاذ السويس"}</small>

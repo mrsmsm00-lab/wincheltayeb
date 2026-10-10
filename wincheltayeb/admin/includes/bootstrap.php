@@ -82,6 +82,11 @@ function migrate(PDO $pdo): void {
     // أعمدة اتضافت بعد الإصدار الأول
     $cols = array_column($pdo->query('PRAGMA table_info(posts)')->fetchAll(), 'name');
     if (!in_array('format', $cols, true)) $pdo->exec("ALTER TABLE posts ADD COLUMN format TEXT NOT NULL DEFAULT 'markdown'");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS landing_pages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, template TEXT NOT NULL,
+        published INTEGER NOT NULL DEFAULT 0, noindex INTEGER NOT NULL DEFAULT 1, data TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )");
 }
 
 function clean_format($f): string { return $f === 'html' ? 'html' : 'markdown'; }

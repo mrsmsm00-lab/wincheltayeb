@@ -1,8 +1,5 @@
 import localFont from "next/font/local";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import CallBar from "@/components/CallBar";
 import JsonLd from "@/components/JsonLd";
 import Tracker from "@/components/Tracker";
 import { getData } from "@/lib/content";
@@ -38,16 +35,12 @@ export const viewport = { themeColor: "#0B4EA2", width: "device-width", initialS
 
 export default async function RootLayout({ children }) {
   const { settings, posts } = await getData();
-  const services = posts.filter((p) => p.type === "service");
   const areas = posts.filter((p) => p.type === "area");
   return (
     <html lang="ar-EG" dir="rtl" className={`${display.variable} ${body.variable}`}>
       <body>
         <a href="#main" className="skip">انتقل للمحتوى</a>
-        <Header settings={settings} />
-        <main id="main">{children}</main>
-        <Footer settings={settings} services={services} areas={areas} />
-        <CallBar settings={settings} />
+        {children}
         <Tracker />
         <JsonLd data={[businessSchema(settings, areas), websiteSchema()]} />
       </body>

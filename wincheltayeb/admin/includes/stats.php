@@ -185,6 +185,15 @@ function stats_where(array $extra = []): array {
     if (!empty($f['vid'])) { $w[] = 's.vid = ?'; $a[] = $f['vid']; }
     if (!empty($f['campaign'])) { $w[] = '(s.utm_campaign = ? OR s.campaign_id = ?)'; $a[] = $f['campaign']; $a[] = $f['campaign']; }
     if (!empty($f['landing'])) { $w[] = 's.landing = ?'; $a[] = $f['landing']; }
+    // نطاق التقرير: الموقع بس، أو صفحات الهبوط بس، أو الكل
+    $scope = $f['scope'] ?? 'site';
+    if (empty($f['landing']) && in_array($scope, ['site', 'lp'], true)) {
+        $paths = lp_paths();
+        if ($paths) {
+            $w[] = 's.landing ' . ($scope === 'lp' ? '' : 'NOT ') . 'IN (' . implode(',', array_fill(0, count($paths), '?')) . ')';
+            $a = array_merge($a, $paths);
+        } elseif ($scope === 'lp') $w[] = '0';
+    }
     if (($f['converted'] ?? '') === '1') $w[] = '(s.calls + s.whatsapps) > 0';
     if (($f['converted'] ?? '') === '0') $w[] = '(s.calls + s.whatsapps) = 0';
     if (($f['returning'] ?? '') === '1') $w[] = 's.new_visitor = 0';
@@ -212,3 +221,11 @@ function stats_cleanup(): void {
 }
 
 const EVENT_NAMES = ['call' => 'اتصال', 'whatsapp' => 'واتساب', 'cta' => 'زرار', 'nav' => 'القايمة', 'outbound' => 'رابط خارجي', 'link' => 'رابط داخلي', 'form' => 'فورم'];
+
+/** روابط كل صفحات الهبوط (/ads ...) */
+function lp_paths(): array {
+    static $p = null;
+    if ($p === null) { try { $p = array_map(fn($x) => '/' . $x, db()->query('SELECT slug FROM landing_pages')->fetchAll(PDO::FETCH_COLUMN)); } catch (Throwable) { $p = []; } }
+    return $p;
+}
+const STATS_SCOPES = ['site' => 'الموقع (من غير صفحات الهبوط)', 'lp' => 'صفحات الهبوط بس', 'all' => 'الكل'];

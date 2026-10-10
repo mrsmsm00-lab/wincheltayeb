@@ -26,6 +26,20 @@ if (in_array($resource, ['all', 'posts'], true)) {
     foreach ($posts as &$p) { $p['faqs'] = json_decode($p['faqs'], true) ?: []; $p['lat'] = $p['lat'] === null ? null : (float) $p['lat']; $p['lng'] = $p['lng'] === null ? null : (float) $p['lng']; }
     $out['posts'] = $posts;
 }
+if (in_array($resource, ['all', 'landing'], true)) {
+    $out['landing'] = array_map(fn($r) => ['slug' => $r['slug'], 'template' => $r['template'], 'noindex' => (int) $r['noindex'], 'updated_at' => $r['updated_at'], 'data' => json_decode($r['data'], true) ?: []],
+        db()->query('SELECT slug, template, noindex, data, updated_at FROM landing_pages WHERE published = 1')->fetchAll());
+}
+if ($resource === 'landing_preview') {
+    require __DIR__ . '/includes/landing.php';
+    $slug = clean_lp_path((string) ($_GET['slug'] ?? ''));
+    if (!hash_equals(lp_preview_token($slug), (string) ($_GET['token'] ?? ''))) { http_response_code(403); exit('{"error":"token"}'); }
+    $s = db()->prepare('SELECT slug, template, noindex, data, updated_at FROM landing_pages WHERE slug = ?'); $s->execute([$slug]);
+    $r = $s->fetch();
+    header('Cache-Control: no-store');
+    echo json_encode($r ? ['landing' => ['slug' => $r['slug'], 'template' => $r['template'], 'noindex' => 1, 'updated_at' => $r['updated_at'], 'data' => json_decode($r['data'], true) ?: []]] : ['landing' => null], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 if (in_array($resource, ['all', 'gallery'], true)) {
     $out['gallery'] = db()->query('SELECT id, kind, url, thumb, youtube_id, title, caption, area_slug, created_at FROM gallery ORDER BY sort, id DESC')->fetchAll();
 }

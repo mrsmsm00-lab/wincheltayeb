@@ -3,6 +3,7 @@ require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/includes/layout.php';
 require __DIR__ . '/includes/ai.php';
 require __DIR__ . '/includes/editor.php';
+require __DIR__ . '/includes/urls.php';
 require_login();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -49,9 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($data['title'] === '') $errors[] = 'العنوان مطلوب.';
     if ($type === 'area' && ($data['lat'] === null || $data['lng'] === null)) $errors[] = 'حدد مكان المنطقة على الخريطة.';
     if ($data['lat'] !== null && ($data['lat'] < 28.8 || $data['lat'] > 30.6 || $data['lng'] < 31.6 || $data['lng'] > 33.0)) $errors[] = 'المكان اللي اخترته شكله بره محافظة السويس. راجعه.';
-    $dup = db()->prepare('SELECT id FROM posts WHERE type = ? AND slug = ? AND id != ?');
-    $dup->execute([$type, $data['slug'], $id]);
-    if ($dup->fetch()) $errors[] = 'الرابط (slug) ده مستخدم قبل كده. غيّره.';
+    if ($c = url_conflict('post', $data['slug'], $type, $id)) $errors[] = $c . ' اقتراح: ' . url_suggest('post', $data['slug'], $type, $id);
 
     if (!$errors) {
         $data['updated_at'] = date('Y-m-d');
@@ -88,7 +87,8 @@ layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
   <div class="editor-main">
     <label>العنوان (H1) <input name="title" id="title" required value="<?= h($post['title']) ?>"></label>
     <label>الرابط (slug) <span class="hint">حروف إنجليزي صغيرة وشرطة، مثلاً: ain-sokhna</span>
-      <div class="slug-row"><span dir="ltr" class="muted"><?= h(rtrim(cfg('site_url'), '/') . '/' . ($t['path'] ? $t['path'] . '/' : '')) ?></span><input name="slug" id="slug" dir="ltr" value="<?= h($post['slug']) ?>"></div></label>
+      <div class="slug-row"><span dir="ltr" class="muted"><?= h(rtrim(cfg('site_url'), '/') . '/' . ($t['path'] ? $t['path'] . '/' : '')) ?></span><input name="slug" id="slug" dir="ltr" value="<?= h($post['slug']) ?>" data-slug-check="post" data-type="<?= h($type) ?>" data-id="<?= (int) $id ?>"></div>
+      <span class="slug-status" aria-live="polite"></span></label>
     <label>المقدمة (بتظهر تحت العنوان وفي القوايم) <textarea name="excerpt" id="excerpt" rows="2"><?= h($post['excerpt']) ?></textarea></label>
 
     <?php editor_field('body', (string) $post['body'], (string) ($post['format'] ?? 'markdown'), 'format', 'body', $id ? "post-$id" : "new-$type"); ?>

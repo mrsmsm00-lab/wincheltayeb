@@ -32,6 +32,7 @@ function normalize(data) {
     districts: data.districts && Object.keys(data.districts).length ? data.districts : seed.districts,
     posts,
     gallery: data.gallery || [],
+    landing: (data.landing || []).map((l) => ({ ...l, data: parseJson(l.data, {}) })),
   };
 }
 
@@ -61,4 +62,16 @@ export async function getPosts(type) {
 export async function getPost(type, slug) {
   const { posts } = await getData();
   return posts.find((p) => p.type === type && p.slug === decodeURIComponent(slug)) || null;
+}
+
+/** صفحة هبوط بالرابط. مع preview token بتجيب المسودة من غير كاش */
+export async function getLanding(slug, preview) {
+  if (preview && API) {
+    try {
+      const res = await fetch(`${API}?resource=landing_preview&slug=${encodeURIComponent(slug)}&token=${encodeURIComponent(preview)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+      if (res.ok) { const j = await res.json(); if (j.landing) return { ...j.landing, preview: true }; }
+    } catch {}
+  }
+  const { landing } = await getData();
+  return landing.find((l) => l.slug === slug) || null;
 }

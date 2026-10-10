@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'settings') {
         foreach ($fields as $k => $_) set_setting($k, post_str($k, 500));
+        foreach (['site_logo', 'og_image'] as $k) { $v = trim((string) ($_POST[$k] ?? '')); set_setting($k, preg_match('~^(https?://|/)[^\s"<>]*$~', $v) ? mb_substr($v, 0, 500) : ''); }
         set_setting('general_faqs', json_encode(parse_faqs(post_str('general_faqs', 30000)), JSON_UNESCAPED_UNICODE));
         $s = db()->prepare('UPDATE districts SET name = ?, color = ? WHERE key = ?');
         foreach ((array) ($_POST['districts'] ?? []) as $k => $d) {
@@ -59,6 +60,13 @@ layout_start('الإعدادات', 'settings');
   <?php foreach ($fields as $k => $label): ?>
     <label><?= h($label) ?> <input name="<?= $k ?>" value="<?= h(setting($k)) ?>"<?= in_array($k, ['phone', 'phone_intl', 'whatsapp', 'email', 'facebook', 'youtube', 'tiktok', 'instagram'], true) ? ' dir="ltr"' : '' ?>></label>
   <?php endforeach; ?>
+  <h2>الشعار والصور</h2>
+  <div class="img-field"><label>الشعار <span class="hint">بيظهر في الهيدر وصفحات الهبوط. أحسن صورة مربعة PNG بخلفية شفافة. سيبه فاضي عشان يستخدم الشعار الافتراضي</span>
+    <span class="img-row"><input name="site_logo" value="<?= h(setting('site_logo')) ?>" dir="ltr" data-img-input><button type="button" class="btn btn-ghost" data-upload>ارفع شعار</button></span></label>
+    <img class="img-prev" src="<?= h(setting('site_logo')) ?>" alt=""<?= setting('site_logo') ? '' : ' hidden' ?>></div>
+  <div class="img-field"><label>صورة المشاركة الافتراضية <span class="hint">بتظهر لما حد يبعت رابط الموقع على واتساب أو فيسبوك. 1200×630</span>
+    <span class="img-row"><input name="og_image" value="<?= h(setting('og_image')) ?>" dir="ltr" data-img-input><button type="button" class="btn btn-ghost" data-upload>ارفع صورة</button></span></label>
+    <img class="img-prev" src="<?= h(setting('og_image')) ?>" alt=""<?= setting('og_image') ? '' : ' hidden' ?>></div>
   <h2>الأحياء وألوانها على الخريطة</h2>
   <?php foreach ($districts as $k => $d): ?>
     <div class="grid2"><label>الاسم <input name="districts[<?= h($k) ?>][name]" value="<?= h($d['name']) ?>"></label><label>اللون <input type="color" name="districts[<?= h($k) ?>][color]" value="<?= h($d['color']) ?>"></label></div>

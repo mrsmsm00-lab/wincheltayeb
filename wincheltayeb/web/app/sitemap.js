@@ -27,5 +27,7 @@ export default async function sitemap() {
   const imgs = gallery.filter((g) => g.kind === "image").map((g) => g.url);
   const galleryEntry = statics.find((s) => s.url === abs("/gallery"));
   if (galleryEntry && imgs.length) galleryEntry.images = imgs.slice(0, 1000);
-  return [...statics, ...dynamic];
+  const { landing } = await getData();
+  const lps = (landing || []).filter((l) => !l.noindex).map((l) => ({ url: abs(`/${l.slug}`), lastModified: l.updated_at, changeFrequency: "monthly", priority: 0.5 }));
+  return [...statics, ...dynamic, ...lps];
 }

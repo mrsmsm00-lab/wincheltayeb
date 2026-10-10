@@ -13,7 +13,7 @@ export function businessSchema(settings, areas) {
     url: SITE_URL,
     telephone: settings.phone_intl,
     image: abs("/og.png"),
-    logo: abs("/logo.svg"),
+    logo: settings.site_logo || abs("/logo.svg"),
     priceRange: "$$",
     address: { "@type": "PostalAddress", addressLocality: "السويس", addressRegion: "محافظة السويس", addressCountry: "EG" },
     geo: { "@type": "GeoCoordinates", latitude: 29.9668, longitude: 32.5498 },

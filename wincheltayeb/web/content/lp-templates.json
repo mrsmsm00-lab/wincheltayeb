@@ -1,0 +1,230 @@
+[
+  {
+    "id": "sign-blue",
+    "name": "لافتة الطريق",
+    "desc": "نفس هوية الموقع: لافتة زرقا والرقم كبير. مناسبة لأي حملة عامة.",
+    "hero": "sign",
+    "buttons": "sticky",
+    "colors": {
+      "primary": "#0B4EA2",
+      "onPrimary": "#FFFFFF",
+      "accent": "#000000",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFFFF",
+      "surface": "#EEF3F9",
+      "text": "#000000",
+      "muted": "#4A5566",
+      "heroBg": "#000000",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "emergency-red",
+    "name": "طوارئ أحمر",
+    "desc": "أحمر وأسود بإحساس الاستعجال، وزرار اتصال بينبض. للحوادث والأعطال المفاجئة.",
+    "hero": "center",
+    "buttons": "floating",
+    "colors": {
+      "primary": "#D7261E",
+      "onPrimary": "#FFFFFF",
+      "accent": "#111111",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFFFF",
+      "surface": "#FFF1F0",
+      "text": "#111111",
+      "muted": "#5A4A48",
+      "heroBg": "#111111",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "night-yellow",
+    "name": "ونش الليل",
+    "desc": "كحلي غامق وأصفر زي أنوار الطريق. لحملات الليل والطرق السريعة.",
+    "hero": "center",
+    "buttons": "topbar",
+    "colors": {
+      "primary": "#FFC400",
+      "onPrimary": "#111111",
+      "accent": "#25D366",
+      "onAccent": "#06301A",
+      "bg": "#0E1726",
+      "surface": "#16233A",
+      "text": "#F2F5FA",
+      "muted": "#A9B6CC",
+      "heroBg": "#0A1220",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "hazard-stripes",
+    "name": "شريط التحذير",
+    "desc": "أصفر وأسود بخطوط التحذير. لافت جداً على الموبايل.",
+    "hero": "stripes",
+    "buttons": "hero",
+    "colors": {
+      "primary": "#111111",
+      "onPrimary": "#FFD000",
+      "accent": "#FFD000",
+      "onAccent": "#111111",
+      "bg": "#FFFDF2",
+      "surface": "#FFF3B0",
+      "text": "#111111",
+      "muted": "#4D4632",
+      "heroBg": "#FFD000",
+      "heroText": "#111111"
+    }
+  },
+  {
+    "id": "whatsapp-first",
+    "name": "واتساب أولاً",
+    "desc": "أبيض نضيف وزرار واتساب أخضر هو البطل. للي بيحبوا يبعتوا لوكيشن.",
+    "hero": "split",
+    "buttons": "sticky",
+    "colors": {
+      "primary": "#25D366",
+      "onPrimary": "#06301A",
+      "accent": "#0B4EA2",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFFFF",
+      "surface": "#F0FBF4",
+      "text": "#0F1A14",
+      "muted": "#4C5E54",
+      "heroBg": "#F0FBF4",
+      "heroText": "#0F1A14"
+    }
+  },
+  {
+    "id": "sokhna-sea",
+    "name": "بحر السخنة",
+    "desc": "فيروزي وأزرق البحر. لحملات العين السخنة والقرى السياحية.",
+    "hero": "photo",
+    "buttons": "floating",
+    "colors": {
+      "primary": "#0891B2",
+      "onPrimary": "#FFFFFF",
+      "accent": "#F59E0B",
+      "onAccent": "#1F1300",
+      "bg": "#F7FCFD",
+      "surface": "#E3F5F9",
+      "text": "#0B2530",
+      "muted": "#47626C",
+      "heroBg": "#0B3B4A",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "galala-sand",
+    "name": "رملة الجلالة",
+    "desc": "ألوان الصحرا والجبل: رملي وبني ومعاه أزرق. لطريق الجلالة والزعفرانة.",
+    "hero": "split",
+    "buttons": "hero",
+    "colors": {
+      "primary": "#B45309",
+      "onPrimary": "#FFFFFF",
+      "accent": "#1E3A8A",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFBF5",
+      "surface": "#F7EBDD",
+      "text": "#2A1D10",
+      "muted": "#6B5845",
+      "heroBg": "#F2E2CC",
+      "heroText": "#2A1D10"
+    }
+  },
+  {
+    "id": "heavy-steel",
+    "name": "نقل تقيل",
+    "desc": "رمادي معدني وكحلي بشكل رسمي. للميكروباص والنقل التقيل وعقود الشركات.",
+    "hero": "minimal",
+    "buttons": "side",
+    "colors": {
+      "primary": "#F97316",
+      "onPrimary": "#111111",
+      "accent": "#1E293B",
+      "onAccent": "#FFFFFF",
+      "bg": "#F8FAFC",
+      "surface": "#E2E8F0",
+      "text": "#0F172A",
+      "muted": "#475569",
+      "heroBg": "#1E293B",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "fast-orange",
+    "name": "وصول سريع",
+    "desc": "برتقالي وفحمي، وعداد وقت الوصول في الواجهة. لما الوقت هو الإعلان.",
+    "hero": "center",
+    "buttons": "sticky",
+    "colors": {
+      "primary": "#EA580C",
+      "onPrimary": "#FFFFFF",
+      "accent": "#18181B",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFFFF",
+      "surface": "#FFF4EC",
+      "text": "#18181B",
+      "muted": "#57534E",
+      "heroBg": "#18181B",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "premium-gold",
+    "name": "بريميوم",
+    "desc": "بنفسجي غامق وذهبي. للعربيات الفاخرة والأوتوماتيك والسطحة المغطاة.",
+    "hero": "photo",
+    "buttons": "topbar",
+    "colors": {
+      "primary": "#C9A227",
+      "onPrimary": "#1B1033",
+      "accent": "#FFFFFF",
+      "onAccent": "#1B1033",
+      "bg": "#120A24",
+      "surface": "#1E1338",
+      "text": "#F4F0FF",
+      "muted": "#B6A9D6",
+      "heroBg": "#120A24",
+      "heroText": "#FFFFFF"
+    }
+  },
+  {
+    "id": "trust-green",
+    "name": "ثقة وأمان",
+    "desc": "أخضر هادي وأبيض، والتركيز على الضمانات والسعر الواضح.",
+    "hero": "split",
+    "buttons": "floating",
+    "colors": {
+      "primary": "#15803D",
+      "onPrimary": "#FFFFFF",
+      "accent": "#0B4EA2",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFFFF",
+      "surface": "#ECFDF3",
+      "text": "#052E16",
+      "muted": "#3F5F4B",
+      "heroBg": "#ECFDF3",
+      "heroText": "#052E16"
+    }
+  },
+  {
+    "id": "mono-bold",
+    "name": "أبيض وأسود",
+    "desc": "أبيض وأسود بخط عريض جداً والرقم بطول الشاشة. بسيطة وسريعة التحميل.",
+    "hero": "minimal",
+    "buttons": "hero",
+    "colors": {
+      "primary": "#000000",
+      "onPrimary": "#FFFFFF",
+      "accent": "#0B4EA2",
+      "onAccent": "#FFFFFF",
+      "bg": "#FFFFFF",
+      "surface": "#F2F2F2",
+      "text": "#000000",
+      "muted": "#555555",
+      "heroBg": "#FFFFFF",
+      "heroText": "#000000"
+    }
+  }
+]

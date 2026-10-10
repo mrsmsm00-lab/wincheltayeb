@@ -91,7 +91,7 @@ export default function Tracker() {
       const cat = category(el);
       if (!cat) return;
       const node = el.closest("a, button") || el;
-      const label = (node.getAttribute("aria-label") || node.textContent || "").replace(/\s+/g, " ").trim().slice(0, 100);
+      const label = (node.dataset?.trackLabel || node.getAttribute("aria-label") || node.textContent || "").replace(/\s+/g, " ").trim().slice(0, 100);
       const { vid, sid } = ids();
       send({ t: "ev", vid, sid, cat, label, href: node.getAttribute("href") || "", path: location.pathname });
     };

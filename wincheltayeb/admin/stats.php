@@ -5,7 +5,7 @@ require __DIR__ . '/includes/stats.php';
 require_login();
 
 $tab = $_GET['tab'] ?? 'overview';
-$TABS = ['overview' => 'نظرة عامة', 'ads' => 'Google Ads', 'sources' => 'المصادر', 'countries' => 'الدول والأجهزة', 'pages' => 'الصفحات',
+$TABS = ['overview' => 'نظرة عامة', 'ads' => 'Google Ads', 'landing' => 'صفحات الهبوط', 'sources' => 'المصادر', 'countries' => 'الدول والأجهزة', 'pages' => 'الصفحات',
     'clicks' => 'الضغطات', 'sessions' => 'آخر الزيارات', 'ips' => 'الزيارات المكررة', 'settings' => 'إعدادات'];
 if (!isset($TABS[$tab]) && $tab !== 'session') $tab = 'overview';
 
@@ -35,6 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 stats_cleanup();
 $db = stats_db();
+$defaultScope = in_array($tab, ['ads', 'session', 'ips', 'sessions'], true) ? 'all' : 'site';
+if (!isset($_GET['scope'])) $_GET['scope'] = $defaultScope;
 [$W, $A] = stats_where($tab === 'ads' ? ['ads' => '1'] : []);
 [$from, $to, $range] = stats_range();
 $q = fn(string $sql, array $args = []) => (function () use ($db, $sql, $args) { $s = $db->prepare($sql); $s->execute($args); return $s; })();
@@ -110,6 +112,9 @@ layout_start('الإحصائيات', 'stats');
 <?php if ($tab !== 'settings' && $tab !== 'session'): ?>
 <form class="filters box" method="get">
   <input type="hidden" name="tab" value="<?= h($tab) ?>">
+  <?php if (!empty($_GET['landing'])): ?><input type="hidden" name="landing" value="<?= h($_GET['landing']) ?>"><?php elseif ($tab !== 'landing'): ?>
+  <label>النطاق <select name="scope"><?php foreach (STATS_SCOPES as $k => $l): ?><option value="<?= $k ?>"<?= ($_GET['scope'] ?? 'site') === $k ? ' selected' : '' ?>><?= h($l) ?></option><?php endforeach; ?></select></label>
+  <?php endif; ?>
   <label>الفترة <select name="range" onchange="this.form.querySelector('.custom-range').hidden = this.value !== 'custom'">
     <?php foreach (['today' => 'النهارده', 'yesterday' => 'امبارح', '7d' => 'آخر 7 أيام', '30d' => 'آخر 30 يوم', '90d' => 'آخر 90 يوم', 'custom' => 'فترة مخصصة'] as $k => $l): ?><option value="<?= $k ?>"<?= $range === $k ? ' selected' : '' ?>><?= $l ?></option><?php endforeach; ?>
   </select></label>
@@ -127,6 +132,9 @@ layout_start('الإحصائيات', 'stats');
 </form>
 <?php endif; ?>
 
+<?php if (!empty($_GET['landing'])): ?>
+<div class="flash flash-ok">إنت شايف إحصائيات الزيارات اللي دخلت من <strong dir="ltr"><?= h($_GET['landing']) ?></strong> بس. <a href="<?= h($qs(['landing' => null])) ?>">ارجع لكل الموقع</a></div>
+<?php endif; ?>
 <?php
 switch ($tab):
 /* ================= نظرة عامة ================= */
@@ -204,6 +212,33 @@ case 'ads':
         <li>بعد ساعات من التشغيل هتبدأ الحملات والكلمات تظهر في الجداول اللي فوق.</li>
       </ol>
       <p class="muted">الأرقام هنا بتيجي من زوار الموقع نفسه. Google Ads بيحسب الضغطة لحظة ما الشخص يدوس على الإعلان، وإحنا بنحسبها لما الصفحة تحمّل فعلاً، فطبيعي يبقى فيه فرق بسيط. وفرق كبير معناه إن ناس بتضغط وتقفل قبل ما الصفحة تفتح.</p></section>';
+    break;
+
+/* ================= صفحات الهبوط ================= */
+case 'landing':
+    [$W2, $A2] = stats_where(['scope' => 'lp']);
+    $S = summary($db, $W2, $A2);
+    echo '<div class="kpis">';
+    kpi('زيارات صفحات الهبوط', number_format((int) $S['sessions']), number_format((int) $S['visitors']) . ' زائر');
+    kpi('اتصلوا', number_format((int) $S['calls']), '', 'kpi-good');
+    kpi('راسلوا واتساب', number_format((int) $S['was']), '', 'kpi-good');
+    kpi('نسبة التحويل', pct($S['conv'], $S['sessions']), '', 'kpi-good');
+    kpi('متوسط الوقت', fmt_dur((int) round($S['dur'])));
+    kpi('خرجوا بسرعة', pct($S['bounces'], $S['sessions']), '', 'kpi-warn');
+    echo '</div><section class="box">'; day_chart($db, $W2, $A2, $from, $to); echo '</section>';
+    $names = []; foreach (db()->query('SELECT slug, name, template, published FROM landing_pages') as $r) $names['/' . $r['slug']] = $r;
+    $rows = $q("SELECT landing, COUNT(*) n, SUM(is_ads) ads, COUNT(DISTINCT ip) ips, SUM(calls) calls, SUM(whatsapps) was, SUM(CASE WHEN calls + whatsapps > 0 THEN 1 ELSE 0 END) c,
+        AVG(duration) d, SUM(CASE WHEN pageviews <= 1 AND duration < 10 THEN 1 ELSE 0 END) b FROM sessions s WHERE $W2 GROUP BY landing ORDER BY n DESC", $A2)->fetchAll();
+    echo '<section class="box"><h2>مقارنة الصفحات</h2><p class="muted">قارن بين القوالب والصفحات: أنهي واحدة بتحوّل الزوار لمكالمات أكتر؟ دوس على أي صفحة تشوف إحصائياتها كاملة (المصادر، والدول، والكلمات، وكل زائر عمل إيه).</p><div class="table-wrap"><table class="table"><thead><tr><th>الصفحة</th><th>زيارات</th><th>من إعلان</th><th>IPs</th><th>اتصال</th><th>واتساب</th><th>التحويل</th><th>متوسط الوقت</th><th>خروج سريع</th></tr></thead><tbody>';
+    foreach ($rows as $r) {
+        $nm = $names[$r['landing']] ?? null;
+        echo '<tr><td><a href="' . h($qs(['tab' => 'overview', 'landing' => $r['landing'], 'scope' => 'all'])) . '"><strong>' . h($nm['name'] ?? $r['landing']) . '</strong></a><br><small dir="ltr" class="muted">' . h($r['landing']) . '</small>' . ($nm && !$nm['published'] ? ' <span class="tag">مسودة</span>' : '') . '</td><td>' . $r['n'] . '</td><td>' . $r['ads'] . '</td><td>' . $r['ips'] . '</td><td>' . $r['calls'] . '</td><td>' . $r['was'] . '</td><td><strong>' . pct($r['c'], $r['n']) . '</strong></td><td>' . fmt_dur((int) $r['d']) . '</td><td>' . pct($r['b'], $r['n']) . '</td></tr>';
+    }
+    if (!$rows) echo '<tr><td colspan="9" class="muted">مفيش زيارات لصفحات الهبوط في الفترة دي.</td></tr>';
+    echo '</tbody></table></div></section>';
+    echo '<section class="box"><h2>أنهي زرار بيتضغط أكتر في صفحات الهبوط؟</h2>';
+    bars($q("SELECT e.label, COUNT(*) n FROM events e JOIN sessions s ON s.sid = e.sid WHERE $W2 AND e.category IN ('call','whatsapp') GROUP BY e.label ORDER BY n DESC LIMIT 12", $A2)->fetchAll(), 'label', 'n');
+    echo '<p class="hint">اسم الزرار بيوضح مكانه (الواجهة، العائم، الشريط الثابت…)، فتعرف أنهي مكان أحسن.</p></section>';
     break;
 
 /* ================= المصادر ================= */
