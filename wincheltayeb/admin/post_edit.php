@@ -1,0 +1,157 @@
+<?php
+require __DIR__ . '/includes/bootstrap.php';
+require __DIR__ . '/includes/layout.php';
+require_login();
+
+$id = (int) ($_GET['id'] ?? 0);
+$post = null;
+if ($id) {
+    $s = db()->prepare('SELECT * FROM posts WHERE id = ?'); $s->execute([$id]); $post = $s->fetch();
+    if (!$post) { flash('الصفحة دي مش موجودة.', 'err'); redirect('index.php'); }
+    $type = $post['type'];
+} else {
+    $type = $_GET['type'] ?? 'blog';
+    if (!isset(POST_TYPES[$type])) $type = 'blog';
+    $post = ['type' => $type, 'slug' => '', 'title' => '', 'excerpt' => '', 'body' => '', 'meta_title' => '', 'meta_description' => '',
+        'image' => '', 'icon' => 'car', 'district' => '', 'place_name' => '', 'lat' => null, 'lng' => null, 'eta' => '', 'faqs' => '[]',
+        'published' => 1, 'sort' => 100, 'published_at' => date('Y-m-d')];
+}
+$errors = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $data = [
+        'title' => post_str('title', 200),
+        'slug' => slugify(post_str('slug', 120) ?: post_str('title', 120)),
+        'excerpt' => post_str('excerpt', 500),
+        'body' => str_replace("\r\n", "\n", post_str('body', 200000)),
+        'meta_title' => post_str('meta_title', 120),
+        'meta_description' => post_str('meta_description', 320),
+        'image' => post_str('image', 500),
+        'icon' => array_key_exists($_POST['icon'] ?? '', ICONS) ? $_POST['icon'] : '',
+        'district' => post_str('district', 40),
+        'place_name' => post_str('place_name', 120),
+        'lat' => is_numeric($_POST['lat'] ?? null) ? (float) $_POST['lat'] : null,
+        'lng' => is_numeric($_POST['lng'] ?? null) ? (float) $_POST['lng'] : null,
+        'eta' => post_str('eta', 80),
+        'faqs' => json_encode(parse_faqs(post_str('faqs', 50000)), JSON_UNESCAPED_UNICODE),
+        'published' => isset($_POST['published']) ? 1 : 0,
+        'sort' => (int) ($_POST['sort'] ?? 0),
+        'published_at' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['published_at'] ?? '') ? $_POST['published_at'] : date('Y-m-d'),
+    ];
+    try {
+        $up = handle_upload('image_file', ['image']);
+        if ($up) $data['image'] = $up;
+    } catch (RuntimeException $e) { $errors[] = $e->getMessage(); }
+    if ($data['title'] === '') $errors[] = 'العنوان مطلوب.';
+    if ($type === 'area' && ($data['lat'] === null || $data['lng'] === null)) $errors[] = 'حدد مكان المنطقة على الخريطة.';
+    if ($data['lat'] !== null && ($data['lat'] < 28.8 || $data['lat'] > 30.6 || $data['lng'] < 31.6 || $data['lng'] > 33.0)) $errors[] = 'المكان اللي اخترته شكله بره محافظة السويس. راجعه.';
+    $dup = db()->prepare('SELECT id FROM posts WHERE type = ? AND slug = ? AND id != ?');
+    $dup->execute([$type, $data['slug'], $id]);
+    if ($dup->fetch()) $errors[] = 'الرابط (slug) ده مستخدم قبل كده. غيّره.';
+
+    if (!$errors) {
+        $data['updated_at'] = date('Y-m-d');
+        $cols = array_keys($data);
+        if ($id) {
+            $set = implode(', ', array_map(fn($c) => "$c = :$c", $cols));
+            $stmt = db()->prepare("UPDATE posts SET $set WHERE id = :id");
+            $stmt->execute(array_combine(array_map(fn($c) => ":$c", $cols), array_values($data)) + [':id' => $id]);
+        } else {
+            $data['type'] = $type; $cols = array_keys($data);
+            $stmt = db()->prepare('INSERT INTO posts (' . implode(',', $cols) . ') VALUES (' . implode(',', array_map(fn($c) => ":$c", $cols)) . ')');
+            $stmt->execute(array_combine(array_map(fn($c) => ":$c", $cols), array_values($data)));
+            $id = (int) db()->lastInsertId();
+        }
+        $r = revalidate_site();
+        flash('اتحفظ.' . ($r['ok'] ? ' والموقع اتحدث.' : ' بس ' . $r['msg']), $r['ok'] ? 'ok' : 'warn');
+        redirect("post_edit.php?id=$id");
+    }
+    $post = array_merge($post, $data);
+}
+
+$districts = districts();
+$t = POST_TYPES[$type];
+layout_start(($id ? 'تعديل ' : 'إضافة ') . $t['one'], $type);
+?>
+<div class="head-row">
+  <h1><?= $id ? 'تعديل: ' . h($post['title']) : 'إضافة ' . h($t['one']) ?></h1>
+  <?php if ($id): ?><a class="btn btn-ghost" href="<?= h(public_url($type, $post['slug'])) ?>" target="_blank" rel="noopener">عرض على الموقع</a><?php endif; ?>
+</div>
+<?php foreach ($errors as $e): ?><div class="flash flash-err"><?= h($e) ?></div><?php endforeach; ?>
+
+<form method="post" enctype="multipart/form-data" class="editor">
+  <?= csrf_field() ?>
+  <div class="editor-main">
+    <label>العنوان (H1) <input name="title" id="title" required value="<?= h($post['title']) ?>"></label>
+    <label>الرابط (slug) <span class="hint">حروف إنجليزي صغيرة وشرطة، مثلاً: ain-sokhna</span>
+      <div class="slug-row"><span dir="ltr" class="muted"><?= h(rtrim(cfg('site_url'), '/') . '/' . ($t['path'] ? $t['path'] . '/' : '')) ?></span><input name="slug" id="slug" dir="ltr" value="<?= h($post['slug']) ?>"></div></label>
+    <label>المقدمة (بتظهر تحت العنوان وفي القوايم) <textarea name="excerpt" rows="2"><?= h($post['excerpt']) ?></textarea></label>
+
+    <div class="md">
+      <div class="md-head"><span>المحتوى (Markdown)</span>
+        <div class="md-tools" role="toolbar" aria-label="أدوات التنسيق">
+          <button type="button" data-md="## ">عنوان</button><button type="button" data-md="### ">عنوان فرعي</button>
+          <button type="button" data-wrap="**">عريض</button><button type="button" data-md="- ">قايمة</button>
+          <button type="button" data-md="1. ">خطوات</button><button type="button" data-link>رابط</button>
+          <button type="button" id="toggle-preview">معاينة</button>
+        </div>
+      </div>
+      <textarea name="body" id="body" rows="24" dir="rtl"><?= h($post['body']) ?></textarea>
+      <div id="preview" class="preview" hidden></div>
+      <p class="hint"><span id="body-count">0</span> حرف. ## للعنوان، **كلام** للعريض، - للقايمة، و[نص](/areas/arbaeen) للرابط الداخلي.</p>
+    </div>
+
+    <label>الأسئلة الشائعة <span class="hint">كل سؤال في سطر يبدأ بـ «س:» وإجابته في السطر اللي بعده بـ «ج:»</span>
+      <textarea name="faqs" rows="8"><?= h(faqs_to_text($post['faqs'])) ?></textarea></label>
+
+    <?php if ($type === 'area'): ?>
+    <fieldset class="box">
+      <legend>بيانات المنطقة والخريطة</legend>
+      <div class="grid2">
+        <label>اسم المكان (بيظهر على الخريطة) <input name="place_name" value="<?= h($post['place_name']) ?>"></label>
+        <label>الحي <select name="district"><?php foreach ($districts as $k => $d): ?><option value="<?= h($k) ?>"<?= $post['district'] === $k ? ' selected' : '' ?>><?= h($d['name']) ?></option><?php endforeach; ?></select></label>
+        <label>وقت الوصول المتوقع <input name="eta" value="<?= h($post['eta']) ?>" placeholder="20 لـ 30 دقيقة"></label>
+        <div class="grid2">
+          <label>خط العرض <input name="lat" id="lat" dir="ltr" value="<?= h($post['lat']) ?>"></label>
+          <label>خط الطول <input name="lng" id="lng" dir="ltr" value="<?= h($post['lng']) ?>"></label>
+        </div>
+      </div>
+      <p class="hint">دوس على الخريطة أو اسحب العلامة عشان تحدد مكان المنطقة.</p>
+      <div id="picker" class="picker"></div>
+    </fieldset>
+    <?php endif; ?>
+  </div>
+
+  <aside class="editor-side">
+    <div class="box">
+      <label class="check"><input type="checkbox" name="published" <?= $post['published'] ? 'checked' : '' ?>> منشور على الموقع</label>
+      <label>تاريخ النشر <input type="date" name="published_at" value="<?= h($post['published_at']) ?>"></label>
+      <label>الترتيب <input type="number" name="sort" value="<?= (int) $post['sort'] ?>"></label>
+      <button class="btn btn-block">احفظ</button>
+    </div>
+    <div class="box">
+      <h2>السيو</h2>
+      <label>عنوان جوجل <input name="meta_title" id="meta_title" value="<?= h($post['meta_title']) ?>" maxlength="120"><span class="counter" data-for="meta_title" data-max="60"></span></label>
+      <label>وصف جوجل <textarea name="meta_description" id="meta_description" rows="4" maxlength="320"><?= h($post['meta_description']) ?></textarea><span class="counter" data-for="meta_description" data-max="160"></span></label>
+      <div class="serp" aria-label="معاينة نتيجة جوجل">
+        <span class="serp-url" dir="ltr"><?= h(preg_replace('~^https?://~', '', cfg('site_url'))) ?> › <?= h($t['path']) ?></span>
+        <span class="serp-title" id="serp-title"></span>
+        <span class="serp-desc" id="serp-desc"></span>
+      </div>
+    </div>
+    <div class="box">
+      <h2>الصورة</h2>
+      <?php if ($post['image']): ?><img src="<?= h($post['image']) ?>" alt="" class="thumb"><?php endif; ?>
+      <label>رفع صورة <input type="file" name="image_file" accept="image/jpeg,image/png,image/webp"></label>
+      <label>أو رابط صورة <input name="image" dir="ltr" value="<?= h($post['image']) ?>"></label>
+    </div>
+    <?php if ($type === 'service'): ?>
+    <div class="box"><label>الأيقونة <select name="icon"><?php foreach (ICONS as $k => $l): ?><option value="<?= $k ?>"<?= $post['icon'] === $k ? ' selected' : '' ?>><?= h($l) ?></option><?php endforeach; ?></select></label></div>
+    <?php endif; ?>
+  </aside>
+</form>
+<?php
+$scripts = ['https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.7/marked.min.js'];
+if ($type === 'area') { echo '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">'; $scripts[] = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; }
+layout_end($scripts);

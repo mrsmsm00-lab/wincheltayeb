@@ -1,0 +1,58 @@
+import { cache } from "react";
+import seed from "@/content/seed.json";
+
+const API = process.env.CMS_API_URL;
+
+function parseJson(v, fallback) {
+  if (Array.isArray(v) || (v && typeof v === "object")) return v;
+  try { return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+
+function normalize(data) {
+  const settings = { ...seed.settings, ...(data.settings || {}) };
+  settings.general_faqs = parseJson(settings.general_faqs, []);
+  const posts = (data.posts || [])
+    .filter((p) => Number(p.published) === 1)
+    .map((p) => ({
+      ...p,
+      faqs: parseJson(p.faqs, []),
+      lat: p.lat === null || p.lat === "" ? null : Number(p.lat),
+      lng: p.lng === null || p.lng === "" ? null : Number(p.lng),
+      sort: Number(p.sort || 0),
+    }))
+    .sort((a, b) => a.sort - b.sort);
+  return {
+    settings,
+    districts: data.districts && Object.keys(data.districts).length ? data.districts : seed.districts,
+    posts,
+    gallery: data.gallery || [],
+  };
+}
+
+// بيجيب المحتوى من لوحة التحكم، ولو مش متاحة بيرجع للمحتوى المدمج في الكود
+export const getData = cache(async () => {
+  if (API) {
+    try {
+      const res = await fetch(`${API}?resource=all`, { next: { revalidate: 600 }, signal: AbortSignal.timeout(8000) });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json?.posts) && json.posts.length) return normalize(json);
+      }
+    } catch (e) {
+      console.warn("CMS unreachable, using seed:", e?.message);
+    }
+  }
+  return normalize(seed);
+});
+
+export async function getPosts(type) {
+  const { posts } = await getData();
+  const list = posts.filter((p) => p.type === type);
+  if (type === "blog") list.sort((a, b) => String(b.published_at).localeCompare(String(a.published_at)));
+  return list;
+}
+
+export async function getPost(type, slug) {
+  const { posts } = await getData();
+  return posts.find((p) => p.type === type && p.slug === decodeURIComponent(slug)) || null;
+}

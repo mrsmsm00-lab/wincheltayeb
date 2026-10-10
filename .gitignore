@@ -1,0 +1,15 @@
+# Next.js
+wincheltayeb/web/node_modules/
+wincheltayeb/web/.next/
+wincheltayeb/web/.env
+wincheltayeb/web/.env.local
+
+# لوحة التحكم: أسرار وبيانات ومرفوعات (مش بتترفع على GitHub)
+wincheltayeb/admin/config.local.php
+wincheltayeb/admin/data/*
+!wincheltayeb/admin/data/.htaccess
+!wincheltayeb/admin/data/.gitkeep
+wincheltayeb/admin/uploads/*
+!wincheltayeb/admin/uploads/.htaccess
+!wincheltayeb/admin/uploads/.gitkeep
+.DS_Store
