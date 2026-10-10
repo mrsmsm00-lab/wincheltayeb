@@ -1,4 +1,9 @@
 <?php
+// رقم نسخة للملفات بيتغير مع كل تعديل، عشان المتصفح ميفضلش شايل النسخة القديمة
+function asset_v(string $file): string {
+    $path = __DIR__ . '/../assets/' . $file;
+    return is_file($path) ? (string) filemtime($path) : '1';
+}
 function layout_start(string $title, string $active = ''): void {
     $u = current_user();
     $f = flash();
@@ -14,7 +19,7 @@ function layout_start(string $title, string $active = ''): void {
 <meta name="robots" content="noindex, nofollow">
 <title><?= h($title) ?> | لوحة ونش الطيب</title>
 <link rel="icon" href="assets/logo.svg">
-<link rel="stylesheet" href="assets/admin.css?v=1">
+<link rel="stylesheet" href="assets/admin.css?v=<?= asset_v('admin.css') ?>">
 </head>
 <body>
 <?php if ($u): ?>
@@ -31,5 +36,5 @@ function layout_start(string $title, string $active = ''): void {
 function layout_end(array $scripts = []): void {
     echo "</main>\n";
     foreach ($scripts as $s) echo '<script src="' . h($s) . '"></script>' . "\n";
-    echo '<script src="assets/admin.js?v=1"></script></body></html>';
+    echo '<script src="assets/admin.js?v=' . asset_v('admin.js') . '"></script></body></html>';
 }
