@@ -7,15 +7,16 @@ import { SITE_URL, SITE_NAME } from "@/lib/site";
 import { businessSchema, websiteSchema } from "@/lib/schema";
 
 // خطوط مفتوحة المصدر (OFL) مستضافة مع الموقع
-const display = localFont({ src: "./fonts/Alexandria-var.woff2", weight: "100 900", variable: "--f-display", display: "swap" });
+// الكلام بيظهر فوراً بخط النظام، وخط الموقع بيتبدل أول ما يوصل (خطين للنص بس: عادي وعريض)
+const display = localFont({ src: "./fonts/Alexandria-var.woff2", weight: "100 900", variable: "--f-display", display: "swap", fallback: ["Segoe UI", "Tahoma", "Arial"] });
 const body = localFont({
   src: [
     { path: "./fonts/IBMPlexSansArabic-Regular.woff2", weight: "400" },
-    { path: "./fonts/IBMPlexSansArabic-Medium.woff2", weight: "500" },
     { path: "./fonts/IBMPlexSansArabic-Bold.woff2", weight: "700" },
   ],
   variable: "--f-body",
   display: "swap",
+  fallback: ["Segoe UI", "Tahoma", "Arial"],
 });
 
 export const metadata = {

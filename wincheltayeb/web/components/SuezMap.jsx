@@ -13,7 +13,18 @@ export default function SuezMap({ points, districts, focus = null, showList = tr
   const [active, setActive] = useState(focus);
   const [filter, setFilter] = useState("all");
 
+  const [inView, setInView] = useState(false);
+  // مكتبة الخريطة بتتحمل بس لما الخريطة تقرّب من الشاشة (أسرع للصفحة)
   useEffect(() => {
+    if (!el.current || inView) return;
+    if (!("IntersectionObserver" in window)) { setInView(true); return; }
+    const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) { setInView(true); io.disconnect(); } }, { rootMargin: "300px" });
+    io.observe(el.current);
+    return () => io.disconnect();
+  }, [inView]);
+
+  useEffect(() => {
+    if (!inView) return;
     let map;
     let cancelled = false;
     import("leaflet").then(({ default: L }) => {
@@ -54,7 +65,7 @@ export default function SuezMap({ points, districts, focus = null, showList = tr
       if (map) map.remove();
       markers.current = {};
     };
-  }, [points, focus]);
+  }, [points, focus, inView]);
 
   useEffect(() => {
     const map = mapRef.current;

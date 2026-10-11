@@ -1,19 +1,11 @@
-import Link from "next/link";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import { getData } from "@/lib/content";
-
-export default async function NotFound() {
-  const { settings, posts } = await getData();
+// صفحة خفيفة: الصفحة دي بتتبعت مع كل صفحة في الموقع، فلازم تفضل صغيرة
+export default function NotFound() {
   return (
-    <>
-      <Header settings={settings} />
-      <main id="main" className="wrap narrow notfound">
-        <h1>الصفحة دي مش موجودة</h1>
-        <p>ممكن الرابط اتغير. ارجع للرئيسية أو شوف مناطق التغطية.</p>
-        <p><Link href="/" className="btn btn-call">الرئيسية</Link> <Link href="/areas" className="btn btn-ghost">مناطق السويس</Link></p>
-      </main>
-      <Footer settings={settings} services={posts.filter((p) => p.type === "service")} areas={posts.filter((p) => p.type === "area")} />
-    </>
+    <main id="main" className="wrap narrow notfound">
+      <p><a href="/"><img src="/logo.svg" alt="ونش إنقاذ الطيب" width="56" height="56" /></a></p>
+      <h1>الصفحة دي مش موجودة</h1>
+      <p>ممكن الرابط اتغير. ارجع للرئيسية أو شوف مناطق التغطية.</p>
+      <p><a href="/" className="btn btn-call">الرئيسية</a> <a href="/areas" className="btn btn-ghost">مناطق السويس</a> <a href="tel:+201000529729" className="btn btn-ghost">اتصل 01000529729</a></p>
+    </main>
   );
 }

@@ -13,7 +13,7 @@ export default function Aside({ settings, title = "محتاج ونش دلوقت�
       {links.length > 0 && (
         <nav className="aside-links" aria-label={linksTitle}>
           <p className="aside-title">{linksTitle}</p>
-          <ul>{links.map((p) => <li key={p.slug}><Link href={postUrl(p)}>{p.place_name || p.title}</Link></li>)}</ul>
+          <ul>{links.map((p) => <li key={p.slug}><Link prefetch={false} href={postUrl(p)}>{p.place_name || p.title}</Link></li>)}</ul>
         </nav>
       )}
     </aside>

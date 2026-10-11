@@ -133,7 +133,7 @@ bdi { unicode-bidi: isolate; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .sign-face { animation: sign-in .7s cubic-bezier(.2,.8,.2,1) both; }
-  @keyframes sign-in { from { transform: translateY(-24px) rotate(-1deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes sign-in { from { transform: translateY(-14px) rotate(-1deg); } to { transform: none; } }
 }
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; gap: 28px; padding: 32px 0 84px; }

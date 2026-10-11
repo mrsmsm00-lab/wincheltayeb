@@ -14,20 +14,20 @@ export default function Footer({ settings, services, areas }) {
         </div>
         <div>
           <p className="footer-head">خدماتنا</p>
-          <ul>{services.map((s) => <li key={s.slug}><Link href={postUrl(s)}>{s.title}</Link></li>)}</ul>
+          <ul>{services.map((s) => <li key={s.slug}><Link prefetch={false} href={postUrl(s)}>{s.title}</Link></li>)}</ul>
         </div>
         <div className="footer-areas">
           <p className="footer-head">مناطق السويس</p>
-          <ul>{areas.map((a) => <li key={a.slug}><Link href={postUrl(a)}>{a.place_name || a.title}</Link></li>)}</ul>
+          <ul>{areas.map((a) => <li key={a.slug}><Link prefetch={false} href={postUrl(a)}>{a.place_name || a.title}</Link></li>)}</ul>
         </div>
         <div>
           <p className="footer-head">روابط</p>
           <ul>
-            <li><Link href="/suez-map">خريطة التغطية</Link></li>
-            <li><Link href="/blog">نصايح ومقالات</Link></li>
-            <li><Link href="/gallery">صور وفيديوهات</Link></li>
-            <li><Link href="/about">مين إحنا</Link></li>
-            <li><Link href="/contact">كلمنا</Link></li>
+            <li><Link prefetch={false} href="/suez-map">خريطة التغطية</Link></li>
+            <li><Link prefetch={false} href="/blog">نصايح ومقالات</Link></li>
+            <li><Link prefetch={false} href="/gallery">صور وفيديوهات</Link></li>
+            <li><Link prefetch={false} href="/about">مين إحنا</Link></li>
+            <li><Link prefetch={false} href="/contact">كلمنا</Link></li>
             <li><a href="/sitemap.xml">خريطة الموقع</a></li>
             <li><a href="/llms.txt">llms.txt</a></li>
           </ul>

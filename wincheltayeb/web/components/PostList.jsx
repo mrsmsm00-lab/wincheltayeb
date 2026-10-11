@@ -9,7 +9,7 @@ export function ServiceRows({ services }) {
         <li key={s.slug}>
           <span className="plate-icon"><Icon name={s.icon || "car"} size={28} /></span>
           <div>
-            <h3><Link href={postUrl(s)}>{s.title}</Link></h3>
+            <h3><Link prefetch={false} href={postUrl(s)}>{s.title}</Link></h3>
             <p>{s.excerpt}</p>
           </div>
         </li>
@@ -23,7 +23,7 @@ export function AreaPlates({ areas }) {
     <ul className="area-plates">
       {areas.map((a) => (
         <li key={a.slug}>
-          <Link href={postUrl(a)}>
+          <Link prefetch={false} href={postUrl(a)}>
             <span>{a.place_name || a.title}</span>
             {a.eta && <small>{a.eta}</small>}
           </Link>
@@ -43,7 +43,7 @@ export function ArticleList({ posts }) {
       {posts.map((p) => (
         <li key={p.slug}>
           <time dateTime={p.published_at}>{fmt(p.published_at)}</time>
-          <h3><Link href={postUrl(p)}>{p.title}</Link></h3>
+          <h3><Link prefetch={false} href={postUrl(p)}>{p.title}</Link></h3>
           <p>{p.excerpt}</p>
         </li>
       ))}

@@ -32,7 +32,7 @@ function SectionHead({ title, more_label, more_href, settings }) {
   return (
     <div className="section-head">
       {title && <h2>{fill(title, settings)}</h2>}
-      {more_label && more_href && <Link href={more_href} className="more">{more_label}</Link>}
+      {more_label && more_href && <Link prefetch={false} href={more_href} className="more">{more_label}</Link>}
     </div>
   );
 }
@@ -55,7 +55,7 @@ function Hero({ s, settings, areas }) {
               <ul className="sign-rows" aria-label="أوقات وصول تقريبية">
                 {rows.map((a) => (
                   <li key={a.slug}>
-                    <Link href={postUrl(a)}>{a.place_name || a.title}</Link>
+                    <Link prefetch={false} href={postUrl(a)}>{a.place_name || a.title}</Link>
                     <span>{a.eta}</span>
                   </li>
                 ))}
@@ -94,7 +94,7 @@ function GalleryTeaser({ items }) {
     <ul className="gallery">
       {items.map((g) => (
         <li key={g.id}>
-          <Link href="/gallery" className="gallery-link">
+          <Link prefetch={false} href="/gallery" className="gallery-link">
             <img src={g.kind === "image" ? g.url : g.thumb || "/og.png"} alt={g.title} loading="lazy" />
           </Link>
           <p>{g.title}</p>
