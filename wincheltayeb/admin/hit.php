@@ -43,14 +43,18 @@ if ($t === 'pv') {
         [$stype, $sname, $refDomain, $isAds] = classify_source($ref, $q, (string) parse_url($site, PHP_URL_HOST));
         if ($stype === 'internal') { $stype = 'direct'; $sname = 'مباشر'; }
         $ret = $db->prepare('SELECT 1 FROM sessions WHERE vid = ? LIMIT 1'); $ret->execute([$vid]);
+        // بصمة مبدئية من جهة السيرفر (من غير إذن الزائر): نوع الجهاز والنظام والمتصفح والشاشة واللغة.
+        // بتجمّع "نفس نوع التليفون" عشان نعرفه لو مسح الكوكيز أو غيّر الـ IP. أضعف من البصمة الكاملة.
+        $lang = $cut($d['lang'] ?? '', 20); $screen = $cut($d['screen'] ?? '', 20);
+        $sig = substr(md5($uaInfo['device'] . '|' . $uaInfo['os'] . '|' . $uaInfo['browser'] . '|' . $screen . '|' . $lang), 0, 16);
         $db->prepare('INSERT OR IGNORE INTO sessions (sid, vid, ip, country, ua, device, os, browser, lang, screen, started_at, last_at, pageviews, landing, referrer, ref_domain,
-            source_type, source_name, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, campaign_id, adgroup_id, keyword, matchtype, ad_device, network, is_ads, new_visitor)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([
-            $sid, $vid, $ip, geo_country($ip), $ua, $uaInfo['device'], $uaInfo['os'], $uaInfo['browser'], $cut($d['lang'] ?? '', 20), $cut($d['screen'] ?? '', 20),
+            source_type, source_name, utm_source, utm_medium, utm_campaign, utm_term, utm_content, gclid, campaign_id, adgroup_id, keyword, matchtype, ad_device, network, is_ads, new_visitor, sig)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')->execute([
+            $sid, $vid, $ip, geo_country($ip), $ua, $uaInfo['device'], $uaInfo['os'], $uaInfo['browser'], $lang, $screen,
             $now, $now, $path, $ref, $refDomain, $stype, $cut($sname, 100),
             $q['utm_source'] ?? '', $q['utm_medium'] ?? '', $q['utm_campaign'] ?? '', $q['utm_term'] ?? '', $q['utm_content'] ?? '',
             $q['gclid'] ?? ($q['gbraid'] ?? ($q['wbraid'] ?? '')), $q['campaignid'] ?? ($q['campaign_id'] ?? ''), $q['adgroupid'] ?? ($q['adgroup'] ?? ''),
-            $q['keyword'] ?? ($q['utm_term'] ?? ''), $q['matchtype'] ?? '', $q['device'] ?? '', $q['network'] ?? '', $isAds ? 1 : 0, $ret->fetch() ? 0 : 1,
+            $q['keyword'] ?? ($q['utm_term'] ?? ''), $q['matchtype'] ?? '', $q['device'] ?? '', $q['network'] ?? '', $isAds ? 1 : 0, $ret->fetch() ? 0 : 1, $sig,
         ]);
     } else {
         if ($sess['pageviews'] > 300) $done();
