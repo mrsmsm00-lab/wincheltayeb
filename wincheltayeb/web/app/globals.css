@@ -370,3 +370,8 @@ bdi { unicode-bidi: isolate; }
 .main-nav a.nav-cta { background: var(--blue); color: #fff; }
 .main-nav a.nav-cta:hover { background: var(--blue-deep); color: #fff; }
 .mobile-menu a.nav-cta { color: var(--blue); font-weight: 800; }
+
+/* زرار اعرف أقرب ونش ليك (تحديد الموقع) */
+.btn-geo { background: #1f9d57; color: #fff; cursor: pointer; border: 0; font: inherit; }
+.btn-geo:hover { background: #18834a; color: #fff; }
+.btn-geo[aria-busy="true"] { opacity: .75; pointer-events: none; }

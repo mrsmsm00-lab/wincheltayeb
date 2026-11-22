@@ -20,7 +20,8 @@ function stats_db(): PDO {
         campaign_id TEXT NOT NULL DEFAULT '', adgroup_id TEXT NOT NULL DEFAULT '', keyword TEXT NOT NULL DEFAULT '',
         matchtype TEXT NOT NULL DEFAULT '', ad_device TEXT NOT NULL DEFAULT '', network TEXT NOT NULL DEFAULT '',
         is_ads INTEGER NOT NULL DEFAULT 0, calls INTEGER NOT NULL DEFAULT 0, whatsapps INTEGER NOT NULL DEFAULT 0, new_visitor INTEGER NOT NULL DEFAULT 1,
-        sig TEXT NOT NULL DEFAULT ''
+        sig TEXT NOT NULL DEFAULT '', fp TEXT NOT NULL DEFAULT '', hw TEXT NOT NULL DEFAULT '', net TEXT NOT NULL DEFAULT '',
+        dx TEXT NOT NULL DEFAULT '', geo_lat REAL, geo_lng REAL, geo_acc INTEGER
     );
     CREATE TABLE IF NOT EXISTS phone_alerts (pkey TEXT PRIMARY KEY, alerted_clicks INTEGER NOT NULL, emails INTEGER NOT NULL DEFAULT 1, first_at INTEGER NOT NULL, last_at INTEGER NOT NULL);
     CREATE INDEX IF NOT EXISTS s_started ON sessions(started_at);
@@ -39,9 +40,15 @@ function stats_db(): PDO {
     CREATE INDEX IF NOT EXISTS e_sid ON events(sid, ts);
     CREATE INDEX IF NOT EXISTS e_ts ON events(ts, category);
     ");
-    // migration: add sig to an older sessions table that predates it, then its index
-    try { $pdo->exec("ALTER TABLE sessions ADD COLUMN sig TEXT NOT NULL DEFAULT ''"); } catch (Throwable $e) { /* already there */ }
+    // migrations: add newer columns to a sessions table that predates them
+    foreach ([
+        "sig TEXT NOT NULL DEFAULT ''", "fp TEXT NOT NULL DEFAULT ''", "hw TEXT NOT NULL DEFAULT ''",
+        "net TEXT NOT NULL DEFAULT ''", "dx TEXT NOT NULL DEFAULT ''", "geo_lat REAL", "geo_lng REAL", "geo_acc INTEGER",
+    ] as $col) {
+        try { $pdo->exec("ALTER TABLE sessions ADD COLUMN $col"); } catch (Throwable $e) { /* already there */ }
+    }
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS s_sig ON sessions(sig)"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS s_fp ON sessions(fp)"); } catch (Throwable $e) { /* ignore */ }
     return $pdo;
 }
 

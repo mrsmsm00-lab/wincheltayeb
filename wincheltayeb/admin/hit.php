@@ -19,7 +19,7 @@ $done = function () { http_response_code(204); exit; };
 if (!is_array($d)) $done();
 $id = fn($k) => preg_match('/^[a-z0-9]{8,40}$/', (string) ($d[$k] ?? '')) ? (string) $d[$k] : '';
 $t = (string) ($d['t'] ?? ''); $vid = $id('vid'); $sid = $id('sid'); $pvid = $id('pvid');
-if (!$vid || !$sid || !in_array($t, ['pv', 'hb', 'leave', 'ev'], true)) $done();
+if (!$vid || !$sid || !in_array($t, ['pv', 'hb', 'leave', 'ev', 'dx', 'geo'], true)) $done();
 
 $ua = mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 400);
 $uaInfo = parse_ua($ua);
@@ -66,6 +66,35 @@ if ($t === 'pv') {
 
 if (!$sess) $done();
 $db->prepare('UPDATE sessions SET last_at = ?, duration = ? WHERE sid = ?')->execute([$now, min(14400, $now - (int) $sess['started_at']), $sid]);
+
+if ($t === 'geo') {
+    // الزائر شارك موقعه بالظبط بإذنه (من زرار "اعرف أقرب ونش ليك")
+    $lat = isset($d['lat']) && is_numeric($d['lat']) ? round((float) $d['lat'], 6) : null;
+    $lng = isset($d['lng']) && is_numeric($d['lng']) ? round((float) $d['lng'], 6) : null;
+    if ($lat !== null && $lng !== null && $lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
+        $acc = isset($d['acc']) && is_numeric($d['acc']) ? min(9999999, max(0, (int) $d['acc'])) : null;
+        $db->prepare('UPDATE sessions SET geo_lat = ?, geo_lng = ?, geo_acc = ? WHERE sid = ?')->execute([$lat, $lng, $acc, $sid]);
+    }
+    $done();
+}
+if ($t === 'dx') {
+    // البصمة الكاملة وتفاصيل التليفون من المتصفح (بعد الزيارة)
+    $hex = fn($v) => is_string($v) && preg_match('/^[0-9a-f]{16}$/', $v) ? $v : null;
+    $x = is_array($d['x'] ?? null) ? $d['x'] : [];
+    $clean = [];
+    foreach ($x as $k => $v) {
+        if (!preg_match('/^[a-z]{1,6}$/', (string) $k)) continue;
+        if (is_int($v) || is_float($v)) $clean[$k] = $v;
+        elseif (is_string($v) && $v !== '') $clean[$k] = mb_substr($v, 0, 160);
+        elseif (is_bool($v)) $clean[$k] = (int) $v;
+        if (count($clean) >= 60) break;
+    }
+    $fp = $hex($d['fp'] ?? null);
+    $net = in_array($x['ct'] ?? '', ['wifi', 'cellular', 'ethernet', 'bluetooth', 'none', 'other', 'unknown', 'wimax'], true) ? $x['ct'] : '';
+    $db->prepare('UPDATE sessions SET fp = COALESCE(?, fp), hw = COALESCE(?, hw), dx = ?, net = ? WHERE sid = ?')
+       ->execute([$fp, $hex($d['hw'] ?? null), json_encode($clean, JSON_UNESCAPED_UNICODE), $net, $sid]);
+    $done();
+}
 
 if (($t === 'hb' || $t === 'leave') && $pvid) {
     $ms = max(0, min(4 * 3600 * 1000, (int) ($d['ms'] ?? 0)));

@@ -17,8 +17,8 @@ const ALERT_THRESHOLD = 3;        // عدد ضغطات الإعلان اللي �
 const ALERT_WINDOW_DAYS = 14;     // منحسب الضغطات في المدة دي بس
 const ALERT_ONLY_NO_CONTACT = true;
 
-// التليفون = البصمة المبدئية (نوع الجهاز والنظام والمتصفح والشاشة واللغة)، وإلا رقم الزائر، وإلا الـ IP.
-const PHONE_KEY_SQL = "CASE WHEN sig <> '' THEN 's'||sig WHEN vid <> '' THEN 'v'||vid ELSE 'i'||ip END";
+// التليفون = البصمة الكاملة لو موجودة، وإلا البصمة المبدئية، وإلا رقم الزائر، وإلا الـ IP.
+const PHONE_KEY_SQL = "CASE WHEN fp <> '' THEN 'f'||fp WHEN sig <> '' THEN 's'||sig WHEN vid <> '' THEN 'v'||vid ELSE 'i'||ip END";
 
 function esc_h(?string $s): string { return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 
@@ -81,6 +81,13 @@ function build_report(array $sessions): array
     $h .= $row('ضغطات الإعلان', $adClicks . ' مرة (من إجمالي ' . count($sessions) . ' زيارة)');
     $h .= "<tr><td style='padding:7px 10px;border-bottom:1px solid #eee;color:#666'>التواصل</td><td style='padding:7px 10px;border-bottom:1px solid #eee'>$contactLine</td></tr>";
     $h .= $row('عناوين IP', esc_h(implode('، ', $ips) ?: '—'));
+    if (!empty($latest['fp'])) { $h .= $row('بصمة التليفون', esc_h($latest['fp']) . ' <span style="color:#1fae52">(كاملة)</span>'); }
+    foreach ($sessions as $g) {
+        if (!empty($g['geo_lat'])) {
+            $h .= $row('📍 موقعه بالظبط', '<a href="https://maps.google.com/?q=' . esc_h((string) $g['geo_lat']) . ',' . esc_h((string) $g['geo_lng']) . '">افتح على الخريطة</a> (شاركه بنفسه)');
+            break;
+        }
+    }
     $h .= '</table>';
 
     $h .= "<h3 style='margin:18px 0 8px'>الزيارات</h3><table style='width:100%;border-collapse:collapse;font-size:13px'>";

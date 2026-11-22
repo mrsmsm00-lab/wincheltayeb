@@ -12,6 +12,10 @@ export default function CallActions({ settings, text, compact = false }) {
         <Icon name="whatsapp" size={20} />
         <span>ابعت لوكيشن واتساب</span>
       </a>
+      <button type="button" className="btn btn-geo" data-geo data-wa={settings.whatsapp} data-msg="السلام عليكم، محتاج ونش إنقاذ. ده موقعي:" data-track-label="geo">
+        <Icon name="pin" size={20} />
+        <span>اعرف أقرب ونش ليك</span>
+      </button>
     </div>
   );
 }
